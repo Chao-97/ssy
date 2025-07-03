@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/anaskhan96/soup"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"golang.org/x/sync/errgroup"
@@ -99,7 +100,7 @@ func parseCUDABaseImage(ctx context.Context, tag string) (*config.CUDABaseImage,
 		return nil, fmt.Errorf("Failed to parse reference %s: %w", tag, err)
 	}
 
-	img, err := remote.Image(ref, remote.WithContext(ctx))
+	img, err := remote.Image(ref, remote.WithContext(ctx), remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get image %s: %w", tag, err)
 	}

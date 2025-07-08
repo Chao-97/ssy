@@ -1,9 +1,11 @@
 package internal
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -11,34 +13,38 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/replicate/cog/pkg/config"
 )
 
-func FetchCUDABaseImages() ([]config.CUDABaseImage, error) {
+func FetchCUDABaseImages(ctx context.Context) ([]config.CUDABaseImage, error) {
 	url := "https://hub.docker.com/v2/repositories/nvidia/cuda/tags/?page_size=1000&name=devel-ubuntu&ordering=last_updated"
 	tags, err := fetchCUDABaseImageTags(url)
 	if err != nil {
 		return nil, err
 	}
 
-	images := make([]config.CUDABaseImage, len(tags))
-	eg, egctx := errgroup.WithContext(context.TODO())
-	// set a concurrency limit to avoid throttling by the docker hub api (since these are authenticated requests)
-	eg.SetLimit(1)
+	var images []config.CUDABaseImage
 
-	for idx, tag := range tags {
-		eg.Go(func() error {
-			image, err := parseCUDABaseImage(egctx, tag)
-			if err != nil {
-				return err
-			}
-			images[idx] = *image
-			return nil
-		})
+	for _, tag := range tags {
+		image, err := parseCUDABaseImage(ctx, tag)
+		if err != nil {
+			return nil, err
+		}
+		images = append(images, *image)
 	}
-	return images, eg.Wait()
+
+	// some form of stable sorting to keep the output deterministic
+	slices.SortFunc(images, func(a, b config.CUDABaseImage) int {
+		return cmp.Or(
+			cmp.Compare(a.CUDA, b.CUDA),
+			cmp.Compare(a.CuDNN, b.CuDNN),
+			cmp.Compare(a.Ubuntu, b.Ubuntu),
+			cmp.Compare(a.Tag, b.Tag),
+		)
+	})
+
+	return images, nil
 }
 
 func fetchCUDABaseImageTags(url string) ([]string, error) {
@@ -83,12 +89,12 @@ func fetchCUDABaseImageTags(url string) ([]string, error) {
 
 func parseCUDABaseImage(ctx context.Context, tag string) (*config.CUDABaseImage, error) {
 	fmt.Println("parsing", tag)
+
 	baseImg := &config.CUDABaseImage{
 		Tag:     tag,
 		IsDevel: strings.Contains(tag, "-devel"),
 	}
 
-	fmt.Println("tag", tag)
 	if parts := strings.Split(tag, "ubuntu"); len(parts) == 2 {
 		baseImg.Ubuntu = parts[1]
 	} else {
@@ -119,14 +125,11 @@ func parseCUDABaseImage(ctx context.Context, tag string) (*config.CUDABaseImage,
 		case "CUDA_VERSION":
 			baseImg.CUDA = parts[1]
 		case "NV_CUDNN_VERSION":
-			fmt.Println("FOUND CUDNN", envVal)
 			// downstream code expects only the major version component, so strip the rest here
 			// and we can remove it if/when we need the full version
 			baseImg.CuDNN = strings.Split(parts[1], ".")[0]
 		}
 	}
-
-	fmt.Printf("baseImg: %+v\n", baseImg)
 
 	if baseImg.CuDNN == "" {
 		return nil, fmt.Errorf("No CuDNN found in tag %s", tag)

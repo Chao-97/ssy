@@ -16,7 +16,7 @@ import (
 const MinimumCUDAVersion = "11.6"
 const MinimumPythonVersion = "3.8"
 const MinimumTorchVersion = "1.13.1"
-const CogBaseImageName = "cog-base"
+const CogBaseImageName = "ssy-base"
 
 var (
 	baseImageSystemPackages = []string{
@@ -91,7 +91,7 @@ func (b BaseImageConfiguration) MarshalJSON() ([]byte, error) {
 	}
 
 	rawName := BaseImageName(b.CUDAVersion, b.PythonVersion, b.TorchVersion)
-	rawName = strings.TrimPrefix(rawName, global.ReplicateRegistryHost+"/")
+	rawName = strings.TrimPrefix(rawName, global.ReplicateRegistryHost+"/shengsuan/")
 	split := strings.Split(rawName, ":")
 	if len(split) != 2 {
 		return nil, fmt.Errorf("invalid base image name and tag: %s", rawName)

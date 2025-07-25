@@ -18,12 +18,12 @@ TOX := $(UV) run tox
 COG_GO_SOURCE := $(shell find cmd pkg -type f)
 COG_PYTHON_SOURCE := $(shell find python/cog -type f -name '*.py')
 
-COG_BINARIES := cog base-image
+COG_BINARIES := ssy base-image
 
 default: all
 
 .PHONY: all
-all: cog
+all: ssy
 
 .PHONY: wheel
 wheel: pkg/dockerfile/embed/.wheel

@@ -1,7 +1,10 @@
 package cli
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -13,11 +16,20 @@ import (
 	"github.com/replicate/cog/pkg/config"
 	"github.com/replicate/cog/pkg/docker"
 	"github.com/replicate/cog/pkg/global"
-	"github.com/replicate/cog/pkg/http"
+	coghttp "github.com/replicate/cog/pkg/http"
 	"github.com/replicate/cog/pkg/image"
 	"github.com/replicate/cog/pkg/registry"
 	"github.com/replicate/cog/pkg/util/console"
 )
+
+type VerifyModel struct {
+	Username  string `json:"user_name"`
+	Modelname string `json:"model_name"`
+}
+type ModelResponse struct {
+	Code    int    `json:"code"`
+	Massage string `json:"msg"`
+}
 
 var pipelinesImage bool
 
@@ -26,7 +38,7 @@ func newPushCommand() *cobra.Command {
 		Use: "push [IMAGE]",
 
 		Short:   "Build and push model in current directory to a Docker registry",
-		Example: `cog push r8.im/your-username/hotdog-detector`,
+		Example: `ssy push registry.shengsuanyun.com/your-username/hotdog-detector`,
 		RunE:    push,
 		Args:    cobra.MaximumNArgs(1),
 	}
@@ -56,7 +68,7 @@ func push(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	client, err := http.ProvideHTTPClient(ctx, dockerClient)
+	client, err := coghttp.ProvideHTTPClient(ctx, dockerClient)
 	if err != nil {
 		return err
 	}
@@ -81,14 +93,29 @@ func push(cmd *cobra.Command, args []string) error {
 	}
 
 	if imageName == "" {
-		err = fmt.Errorf("To push images, you must either set the 'image' option in cog.yaml or pass an image name as an argument. For example, 'cog push r8.im/your-username/hotdog-detector'")
+		err = fmt.Errorf("To push images, you must either set the 'image' option in ssy.yaml or pass an image name as an argument. For example, 'ssy push registry.shengsuanyun.com/your-username/hotdog-detector'")
 		logClient.EndPush(ctx, err, logCtx)
 		return err
 	}
 
+	shengsuanPrefix := fmt.Sprintf("%s/", global.ShengsuanRegistryHost)
+	if strings.HasPrefix(imageName, shengsuanPrefix) {
+		// 从胜算云获取model是否存在
+		var datas = strings.Split(imageName, "/")
+		if ok, err := verifyModel(datas[1], datas[2]); err != nil {
+			err = fmt.Errorf("Unable to find Shengsuan existing model for %s. Go to shengsuanyun.com and create a new model before pushing.", imageName)
+			logClient.EndPush(ctx, err, logCtx)
+			return err
+		} else if !ok {
+			err = fmt.Errorf("Unable to find Shengsuan existing model for %s. Go to shengsuanyun.com and create a new model before pushing.", imageName)
+			logClient.EndPush(ctx, err, logCtx)
+			return err
+		}
+	}
+
 	replicatePrefix := fmt.Sprintf("%s/", global.ReplicateRegistryHost)
-	if !strings.HasPrefix(imageName, replicatePrefix) && buildLocalImage {
-		err = fmt.Errorf("Unable to push a local image model to a non replicate host, please disable the local image flag before pushing to this host.")
+	if !strings.HasPrefix(imageName, replicatePrefix) && !strings.HasPrefix(imageName, shengsuanPrefix) && buildLocalImage {
+		err = fmt.Errorf("Unable to push a local image model to a non replicate/shengsuan host, please disable the local image flag before pushing to this host.")
 		logClient.EndPush(ctx, err, logCtx)
 		return err
 	}
@@ -125,6 +152,7 @@ func push(cmd *cobra.Command, args []string) error {
 		dockerClient,
 		registryClient,
 		pipelinesImage); err != nil {
+		logClient.EndPush(ctx, err, logCtx)
 		return err
 	}
 
@@ -141,16 +169,25 @@ func push(cmd *cobra.Command, args []string) error {
 		Pipeline:  pipelinesImage,
 	}, client, cfg)
 	if err != nil {
-		if strings.Contains(err.Error(), "404") {
-			err = fmt.Errorf("Unable to find existing Replicate model for %s. "+
-				"Go to replicate.com and create a new model before pushing."+
+		if strings.Contains(err.Error(), "NAME_UNKNOWN") || strings.Contains(err.Error(), "404") {
+			var hostName string
+			var websiteHost string
+			if strings.HasPrefix(imageName, shengsuanPrefix) {
+				hostName = "Shengsuan"
+				websiteHost = "shengsuan.com"
+			} else {
+				hostName = "Replicate"
+				websiteHost = "replicate.com"
+			}
+			err = fmt.Errorf("Unable to find existing %s model for %s. "+
+				"Go to %s and create a new model before pushing."+
 				"\n\n"+
 				"If the model already exists, you may be getting this error "+
 				"because you're not logged in as owner of the model. "+
-				"This can happen if you did `sudo cog login` instead of `cog login` "+
-				"or `sudo cog push` instead of `cog push`, "+
+				"This can happen if you did `sudo ssy login` instead of `ssy login` "+
+				"or `sudo ssy push` instead of `ssy push`, "+
 				"which causes Docker to use the wrong Docker credentials.",
-				imageName)
+				hostName, imageName, websiteHost)
 			logClient.EndPush(ctx, err, logCtx)
 			return err
 		}
@@ -160,13 +197,51 @@ func push(cmd *cobra.Command, args []string) error {
 	}
 
 	console.Infof("Image '%s' pushed", imageName)
-	if strings.HasPrefix(imageName, replicatePrefix) {
+	if strings.HasPrefix(imageName, shengsuanPrefix) {
+		shengsuanPage := fmt.Sprintf("https://%s", strings.Replace(imageName, global.ShengsuanRegistryHost, global.ShengsuanWebsiteHost, 1))
+		console.Infof("\nRun your model on Shengsuan:\n    %s", shengsuanPage)
+	} else if strings.HasPrefix(imageName, replicatePrefix) {
 		replicatePage := fmt.Sprintf("https://%s", strings.Replace(imageName, global.ReplicateRegistryHost, global.ReplicateWebsiteHost, 1))
 		console.Infof("\nRun your model on Replicate:\n    %s", replicatePage)
 	}
 	logClient.EndPush(ctx, nil, logCtx)
 
 	return nil
+}
+
+// 验证token
+func verifyModel(project string, imageName string) (bool, error) {
+	url := "https://" + global.ShengsuanApiHost + "/v2/model/getmodel"
+	modelNames := strings.Split(imageName, ":")
+	var reqData VerifyModel
+	reqData.Username = project
+	reqData.Modelname = modelNames[0]
+	bodyBytes, _ := json.Marshal(reqData)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return false, fmt.Errorf("Failed to create HTTP request: %w", err)
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("Failed to send HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("Received non-OK HTTP status: %d", resp.StatusCode)
+	}
+
+	var modelResq ModelResponse
+	if err := json.NewDecoder(resp.Body).Decode(&modelResq); err != nil {
+		return false, fmt.Errorf("Failed to decode response JSON: %w", err)
+	}
+
+	if modelResq.Code != 0 {
+		return false, fmt.Errorf("Get model Failed with code: %d", modelResq.Code)
+	}
+
+	return true, nil
 }
 
 func addPipelineImage(cmd *cobra.Command) {

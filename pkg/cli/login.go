@@ -6,43 +6,47 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 
 	"github.com/replicate/cog/pkg/docker"
 	"github.com/replicate/cog/pkg/global"
 	"github.com/replicate/cog/pkg/util/console"
 )
 
-type VerifyResponse struct {
-	Username string `json:"username"`
+//	type VerifyResponse struct {
+//		Username string `json:"username"`
+//	}
+type LoginResponse struct {
+	Code int `json:"code"`
+	Data struct {
+		UserName    string `json:"user_name"`
+		AccessToken string `json:"access_token"`
+	} `json:"data"`
 }
 
 func newLoginCommand() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:        "login",
 		SuggestFor: []string{"auth", "authenticate", "authorize"},
-		Short:      "Log in to Replicate Docker registry",
+		Short:      "Log in to Shengsuan Docker registry",
 		RunE:       login,
 		Args:       cobra.MaximumNArgs(0),
 	}
 
-	cmd.Flags().Bool("token-stdin", false, "Pass login token on stdin instead of opening a browser. You can find your Replicate login token at https://replicate.com/auth/token")
-	cmd.Flags().String("registry", global.ReplicateRegistryHost, "Registry host")
+	cmd.Flags().Bool("token-stdin", false, "Pass login token on stdin instead of opening a browser. You can find your Shengsuan login token at https://shengsuan.com/auth/token")
+	cmd.Flags().String("registry", global.ShengsuanRegistryHost, "Registry host")
 	_ = cmd.Flags().MarkHidden("registry")
 
 	return cmd
 }
 
+// ssy login 命令在这里调用,自动一个网页获取token粘贴在这里
 func login(cmd *cobra.Command, args []string) error {
-	ctx := cmd.Context()
-
 	registryHost, err := cmd.Flags().GetString("registry")
 	if err != nil {
 		return err
@@ -59,27 +63,24 @@ func login(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	} else {
-		token, err = readTokenInteractively(registryHost)
+		token, err = promptToken()
 		if err != nil {
 			return err
 		}
 	}
 	token = strings.TrimSpace(token)
 
-	if err := checkTokenFormat(token); err != nil {
-		return err
-	}
-
-	username, err := verifyToken(registryHost, token)
+	username, accessToken, err := verifyToken(token)
 	if err != nil {
 		return err
 	}
 
-	if err := docker.SaveLoginToken(ctx, registryHost, username, token); err != nil {
+	ctx := cmd.Context()
+	if err := docker.SaveLoginToken(ctx, registryHost, username, accessToken); err != nil {
 		return err
 	}
-
-	console.Infof("You've successfully authenticated as %s! You can now use the '%s' registry.", username, registryHost)
+	ssyName := strings.Split(username, "+")
+	console.Infof("You've successfully authenticated as %s! You can now use the '%s' registry.", ssyName[1], registryHost)
 
 	return nil
 }
@@ -92,15 +93,70 @@ func readTokenFromStdin() (string, error) {
 	return string(tokenBytes), nil
 }
 
+// 交互式获取token
+func promptToken() (string, error) {
+	console.Info("Please obtain your login token from https://www.shengsuanyun.com/serverless/token")
+	console.Info("After copying the token, paste it below and press Enter:")
+	fmt.Print("Token: ")
+	var token string
+	_, err := fmt.Scanln(&token)
+	if err != nil {
+		return "", fmt.Errorf("Failed to read token from input: %w", err)
+	}
+	return token, nil
+}
+
+// 验证token
+func verifyToken(token string) (string, string, error) {
+	url := "https://" + global.ShengsuanApiHost + "/v2/user/login"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("Failed to create HTTP request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Token "+token)
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("Failed to send HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 读取响应内容用于调试
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", fmt.Errorf("Failed to read response body: %w", err)
+	}
+
+	console.Debugf("Response status: %d", resp.StatusCode)
+	console.Debugf("Response body: %s", string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("Received non-OK HTTP status: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var loginResp LoginResponse
+	if err := json.Unmarshal(body, &loginResp); err != nil {
+		return "", "", fmt.Errorf("Failed to decode response JSON: %w. Response body: %s", err, string(body))
+	}
+
+	if loginResp.Code != 0 {
+		return "", "", fmt.Errorf("Login failed with code: %d", loginResp.Code)
+	}
+
+	return loginResp.Data.UserName, loginResp.Data.AccessToken, nil
+}
+
 func readTokenInteractively(registryHost string) (string, error) {
 	url, err := getDisplayTokenURL(registryHost)
 	if err != nil {
 		return "", err
 	}
-	console.Infof("This command will authenticate Docker with Replicate's '%s' Docker registry. You will need a Replicate account.", registryHost)
+	console.Infof("This command will authenticate Docker with Tenisy's '%s' Docker registry. You will need a Shengsuan account.", registryHost)
 	console.Info("")
 
-	// TODO(bfirsh): if you have defined a registry in cog.yaml that is not r8.im, suggest to use 'docker login'
+	// TODO(bfirsh): if you have defined a registry in ssy.yaml that is not registry.shengsuanyun.com, suggest to use 'docker login'
 
 	console.Info("Hit enter to get started. A browser will open with an authentication token that you need to paste here.")
 	if _, err := bufio.NewReader(os.Stdin).ReadString('\n'); err != nil {
@@ -112,28 +168,22 @@ func readTokenInteractively(registryHost string) (string, error) {
 	maybeOpenBrowser(url)
 
 	console.Info("")
-	console.Info("Once you've signed in, copy the token from that web page, paste it here, then hit enter:")
-
-	fmt.Print("CLI auth token: ")
-	// Read the token securely, masking the input
-	tokenBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
+	console.Info("Once you've signed in, copy the authentication token from that web page, paste it here, then hit enter:")
+	token, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
-		return "", fmt.Errorf("Failed to read token: %w", err)
+		return "", err
 	}
-
-	// Print a newline after the hidden input
-	fmt.Println()
-
-	return string(tokenBytes), nil
+	return token, nil
 }
 
+// 请求后端服务获取展示token的网页url
 func getDisplayTokenURL(registryHost string) (string, error) {
-	resp, err := http.Get(addressWithScheme(registryHost) + "/cog/v1/display-token-url")
+	resp, err := http.Get(addressWithScheme(registryHost) + "/get/token")
 	if err != nil {
 		return "", fmt.Errorf("Failed to log in to %s: %w", registryHost, err)
 	}
 	if resp.StatusCode == http.StatusNotFound {
-		return "", fmt.Errorf("%s is not the Replicate registry\nPlease log in using 'docker login'", registryHost)
+		return "", fmt.Errorf("%s is not the Shengsuan registry\nPlease log in using 'docker login'", registryHost)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("%s returned HTTP status %d", registryHost, resp.StatusCode)
@@ -141,6 +191,7 @@ func getDisplayTokenURL(registryHost string) (string, error) {
 	body := &struct {
 		URL string `json:"url"`
 	}{}
+	fmt.Println(resp.Body)
 	if err := json.NewDecoder(resp.Body).Decode(body); err != nil {
 		return "", err
 	}
@@ -151,9 +202,10 @@ func addressWithScheme(address string) string {
 	if strings.Contains(address, "://") {
 		return address
 	}
-	return "https://" + address
+	return "http://" + address
 }
 
+// 检测系统类型用对应命令打开相应网页
 func maybeOpenBrowser(url string) {
 	switch runtime.GOOS {
 	case "linux":
@@ -163,37 +215,4 @@ func maybeOpenBrowser(url string) {
 	case "darwin":
 		_ = exec.Command("open", url).Start()
 	}
-}
-
-func checkTokenFormat(token string) error {
-	if strings.HasPrefix(token, "r8_") {
-		return fmt.Errorf("That looks like a Replicate API token, not a CLI auth token. Please fetch a token from https://replicate.com/auth/token to log in!")
-	}
-	return nil
-}
-
-func verifyToken(registryHost string, token string) (username string, err error) {
-	if token == "" {
-		return "", fmt.Errorf("Token is empty")
-	}
-
-	resp, err := http.PostForm(addressWithScheme(registryHost)+"/cog/v1/verify-token", url.Values{
-		"token": []string{token},
-	})
-	if err != nil {
-		return "", fmt.Errorf("Failed to verify token: %w", err)
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		return "", fmt.Errorf("User does not exist")
-	}
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Failed to verify token, got status %d", resp.StatusCode)
-	}
-	body := &struct {
-		Username string `json:"username"`
-	}{}
-	if err := json.NewDecoder(resp.Body).Decode(body); err != nil {
-		return "", err
-	}
-	return body.Username, nil
 }

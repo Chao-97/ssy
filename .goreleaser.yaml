@@ -7,8 +7,8 @@ dist: ./dist/go
 env:
   - CGO_ENABLED=0
 builds:
-  - binary: cog
-    id: cog
+  - binary: ssy
+    id: ssy
     goos:
       - darwin
       - linux
@@ -32,7 +32,7 @@ builds:
 archives:
   - format: binary
     builds:
-      - cog # for now we only release cog
+      - ssy # for now we only release ssy
     name_template: >-
       {{ .Binary }}_
       {{- title .Os }}_

@@ -12,14 +12,14 @@ import (
 
 func NewRootCommand() (*cobra.Command, error) {
 	rootCmd := cobra.Command{
-		Use:   "cog",
-		Short: "Cog: Containers for machine learning",
+		Use:   "ssy",
+		Short: "SSY: Containers for machine learning",
 		Long: `Containers for machine learning.
 
 To get started, take a look at the documentation:
 https://github.com/replicate/cog`,
-		Example: `   To run a command inside a Docker environment defined with Cog:
-      $ cog run echo hello world`,
+		Example: `   To run a command inside a Docker environment defined with SSY:
+      $ ssy run echo hello world`,
 		Version: fmt.Sprintf("%s (built %s)", global.Version, global.BuildTime),
 		// This stops errors being printed because we print them in cmd/cog/cog.go
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {

@@ -27,7 +27,7 @@ from .predictor import (
 from .types import CogConfig
 from .wait import wait_for_env
 
-COG_YAML_FILE = "cog.yaml"
+COG_YAML_FILE = "ssy.yaml"
 COG_PREDICT_TYPE_STUB_ENV_VAR = "COG_PREDICT_TYPE_STUB"
 COG_TRAIN_TYPE_STUB_ENV_VAR = "COG_TRAIN_TYPE_STUB"
 COG_PREDICT_CODE_STRIP_ENV_VAR = "COG_PREDICT_CODE_STRIP"
@@ -57,7 +57,7 @@ def _env_var_from_mode(mode: Mode) -> str:
 
 
 class Config:
-    """A class for reading the cog.yaml properties."""
+    """A class for reading the ssy.yaml properties."""
 
     def __init__(self, config: Optional[CogConfig] = None) -> None:
         self._config = config
@@ -156,7 +156,7 @@ class Config:
             predictor_ref = self.predictor_train_ref
         if predictor_ref is None:
             raise ValueError(
-                f"Can't run predictions: '{mode}' option not found in cog.yaml"
+                f"Can't run predictions: '{mode}' option not found in ssy.yaml"
             )
         return predictor_ref
 

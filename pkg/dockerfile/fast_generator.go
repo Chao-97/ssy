@@ -454,7 +454,7 @@ func (g *FastGenerator) generateAptTarball(ctx context.Context, tmpDir string) (
 
 func (g *FastGenerator) validateConfig() error {
 	if len(g.Config.Build.Run) > 0 {
-		return errors.New("cog builds with fast: true in the cog.yaml do not support build run commands.")
+		return errors.New("ssy builds with fast: true in the ssy.yaml do not support build run commands.")
 	}
 	return nil
 }

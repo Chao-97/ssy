@@ -45,7 +45,7 @@ if __name__ == "__main__":
                 raise CogError(app.state.setup_result.logs)
             schema = remove_title_next_to_ref(app.openapi())
     except ConfigDoesNotExist:
-        raise ConfigDoesNotExist("no cog.yaml found or present") from None
+        raise ConfigDoesNotExist("no ssy.yaml found or present") from None
     except PredictorNotSet:
         raise PredictorNotSet("no predict method found in Predictor") from None
     print(json.dumps(schema, indent=2))

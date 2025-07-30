@@ -3,7 +3,6 @@ package dockerfile
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"github.com/replicate/cog/pkg/config"
 	"github.com/replicate/cog/pkg/docker/command"
 	"github.com/replicate/cog/pkg/dockercontext"
+	"github.com/replicate/cog/pkg/global"
 	"github.com/replicate/cog/pkg/registry"
 	"github.com/replicate/cog/pkg/util/console"
 	"github.com/replicate/cog/pkg/util/slices"
@@ -170,6 +170,8 @@ func (g *StandardGenerator) GenerateInitialSteps(ctx context.Context) (string, e
 		steps := []string{
 			"#syntax=docker/dockerfile:1.4",
 			"FROM " + baseImage,
+			global.SetDefaultARCH,
+			g.setupAptSources(),
 			envs,
 			aptInstalls,
 		}
@@ -188,6 +190,8 @@ func (g *StandardGenerator) GenerateInitialSteps(ctx context.Context) (string, e
 	steps := []string{
 		"#syntax=docker/dockerfile:1.4",
 		"FROM " + baseImage,
+		global.SetDefaultARCH,
+		g.setupAptSources(),
 		g.preamble(),
 		g.installTini(),
 		envs,
@@ -213,7 +217,7 @@ func (g *StandardGenerator) GenerateModelBase(ctx context.Context) (string, erro
 		initialSteps,
 		`WORKDIR /src`,
 		`EXPOSE 5000`,
-		`CMD ["python", "-m", "cog.server.http"]`,
+		`CMD ["python", "-m", "ssy.server.http"]`,
 	}, "\n"), nil
 }
 
@@ -265,7 +269,7 @@ func (g *StandardGenerator) GenerateModelBaseWithSeparateWeights(ctx context.Con
 	base = append(base,
 		`WORKDIR /src`,
 		`EXPOSE 5000`,
-		`CMD ["python", "-m", "cog.server.http"]`,
+		`CMD ["python", "-m", "ssy.server.http"]`,
 		`COPY . /src`,
 	)
 
@@ -336,6 +340,10 @@ func (g *StandardGenerator) BuildDir() (string, error) {
 
 func (g *StandardGenerator) BuildContexts() (map[string]string, error) {
 	return map[string]string{}, nil
+}
+
+func (g *StandardGenerator) setupAptSources() string {
+	return "RUN touch /etc/apt/sources.list && sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list"
 }
 
 func (g *StandardGenerator) preamble() string {
@@ -444,33 +452,29 @@ func (g *StandardGenerator) installCog() (string, error) {
 		if !CheckMajorMinorOnly(g.Config.Build.PythonVersion) {
 			return "", fmt.Errorf("Python version must be <major>.<minor>")
 		}
-		m, err := NewMonobaseMatrix(http.DefaultClient)
-		if err != nil {
-			return "", err
-		}
 		cmds := []string{
-			"ENV R8_COG_VERSION=coglet",
+			"ENV R8_SSY_VERSION=coglet",
 			"ENV R8_PYTHON_VERSION=" + g.Config.Build.PythonVersion,
-			"RUN pip install " + m.LatestCoglet.URL,
+			"RUN pip config set global.index-url " + global.AliyunIndexURL,
+			"RUN curl -o /usr/local/" + global.ShengsuanPyLibDistName + " -L " + global.ShengsuanPyLibAddress,
+			"RUN pip install /usr/local/" + global.ShengsuanPyLibDistName,
 		}
 		return strings.Join(cmds, "\n"), nil
 	}
 
 	// cog-runtime does not support training yet
 	if g.Config.Train == "" {
-		console.Warnf("Major Cog runtime upgrade available. Opt in now by setting build.cog_runtime: true in cog.yaml.")
-		console.Warnf("More: https://replicate.com/changelog/2025-07-21-cog-runtime")
+		console.Warnf("Major SSY runtime upgrade available. Opt in now by setting build.ssy_runtime: true in ssy.yaml.")
+		// console.Warnf("More: https://replicate.com/changelog/2025-07-21-cog-runtime")
 	}
-	data, filename, err := ReadWheelFile()
-	if err != nil {
-		return "", err
+
+	// Use SSY package from Aliyun OSS instead of local wheel file
+	lines := []string{
+		"RUN curl -o /usr/local/" + global.ShengsuanPyLibDistName + " -L " + global.ShengsuanPyLibAddress,
 	}
-	lines, containerPath, err := g.writeTemp(filename, data)
-	if err != nil {
-		return "", err
-	}
+
 	pipInstallLine := "RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir"
-	pipInstallLine += " " + containerPath
+	pipInstallLine += " /usr/local/" + global.ShengsuanPyLibDistName
 	pipInstallLine += " 'pydantic>=1.9,<3'"
 	if g.strip {
 		pipInstallLine += " && " + StripDebugSymbolsCommand
@@ -509,12 +513,14 @@ func (g *StandardGenerator) pipInstalls() (string, error) {
 		return "", err
 	}
 
+	pipConfigLine := "RUN pip config set global.index-url " + global.AliyunIndexURL
 	pipInstallLine := "RUN --mount=type=cache,target=/root/.cache/pip pip install -r " + containerPath
 	if g.strip {
 		pipInstallLine += " && " + StripDebugSymbolsCommand
 	}
 	return strings.Join([]string{
 		copyLine[0],
+		pipConfigLine,
 		CFlags,
 		pipInstallLine,
 		"ENV CFLAGS=",

@@ -28,6 +28,14 @@ all: ssy
 .PHONY: wheel
 wheel: pkg/dockerfile/embed/.wheel
 
+.PHONY: ssy-wheel
+ssy-wheel:
+	@echo "Building SSY wheel package..."
+	@mkdir -p dist
+	@rm -f dist/ssy-*.whl # remove any existing ssy wheels
+	$(UV) build --wheel --out-dir=dist .
+	@echo "SSY wheel built successfully in dist/ directory"
+
 ifdef COG_WHEEL
 pkg/dockerfile/embed/.wheel: $(COG_WHEEL)
 	@mkdir -p pkg/dockerfile/embed

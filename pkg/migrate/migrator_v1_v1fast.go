@@ -214,7 +214,7 @@ func (g *MigratorV1ToV1Fast) flushConfig(cfg *config.Config, dir string, configF
 		return nil
 	}
 
-	console.Infof("New cog.yaml:\n%s\n", configStr)
+	console.Infof("New ssy.yaml:\n%s\n", configStr)
 
 	accept := true
 	if g.Interactive {

@@ -17,7 +17,7 @@ func TestInit(t *testing.T) {
 	require.NoError(t, err)
 
 	require.FileExists(t, path.Join(dir, ".dockerignore"))
-	require.FileExists(t, path.Join(dir, "cog.yaml"))
+	require.FileExists(t, path.Join(dir, "ssy.yaml"))
 	require.FileExists(t, path.Join(dir, "predict.py"))
 	require.FileExists(t, path.Join(dir, "requirements.txt"))
 }
@@ -36,7 +36,7 @@ func TestInitPipeline(t *testing.T) {
 	require.NoError(t, err)
 
 	require.FileExists(t, path.Join(dir, ".dockerignore"))
-	require.FileExists(t, path.Join(dir, "cog.yaml"))
+	require.FileExists(t, path.Join(dir, "ssy.yaml"))
 	require.FileExists(t, path.Join(dir, "main.py"))
 }
 
@@ -50,11 +50,11 @@ func TestInitSkipExisting(t *testing.T) {
 	require.NoError(t, err)
 
 	require.FileExists(t, path.Join(dir, ".dockerignore"))
-	require.FileExists(t, path.Join(dir, "cog.yaml"))
+	require.FileExists(t, path.Join(dir, "ssy.yaml"))
 	require.FileExists(t, path.Join(dir, "predict.py"))
 
 	// update the file to show that its the same file after the second run
-	require.NoError(t, os.WriteFile(path.Join(dir, "cog.yaml"), []byte("test123"), 0o644))
+	require.NoError(t, os.WriteFile(path.Join(dir, "ssy.yaml"), []byte("test123"), 0o644))
 	require.NoError(t, os.WriteFile(path.Join(dir, "predict.py"), []byte("test456"), 0o644))
 	require.NoError(t, os.WriteFile(path.Join(dir, ".dockerignore"), []byte("test789"), 0o644))
 
@@ -63,11 +63,11 @@ func TestInitSkipExisting(t *testing.T) {
 	require.NoError(t, err)
 
 	require.FileExists(t, path.Join(dir, ".dockerignore"))
-	require.FileExists(t, path.Join(dir, "cog.yaml"))
+	require.FileExists(t, path.Join(dir, "ssy.yaml"))
 	require.FileExists(t, path.Join(dir, "predict.py"))
 
 	// check that the files are the same as the first run
-	content, err := os.ReadFile(path.Join(dir, "cog.yaml"))
+	content, err := os.ReadFile(path.Join(dir, "ssy.yaml"))
 	require.NoError(t, err)
 	require.Equal(t, []byte("test123"), content)
 

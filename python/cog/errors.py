@@ -3,8 +3,8 @@ class CogError(Exception):
 
 
 class ConfigDoesNotExist(CogError):
-    """Exception raised when a cog.yaml does not exist."""
+    """Exception raised when a ssy.yaml does not exist."""
 
 
 class PredictorNotSet(CogError):
-    """Exception raised when 'predict' is not set in cog.yaml when it needs to be."""
+    """Exception raised when 'predict' is not set in ssy.yaml when it needs to be."""

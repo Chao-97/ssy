@@ -89,7 +89,7 @@ func findConfigPathInDirectory(dir string, configFilename string) (configPath st
 }
 
 // Walk up the directory tree to find the root of the project.
-// The project root is defined as the directory housing a `cog.yaml` file.
+// The project root is defined as the directory housing a `ssy.yaml` file.
 func findProjectRootDir(startDir string, configFilename string) (string, error) {
 	dir := startDir
 	for i := 0; i < maxSearchDepth; i++ {
@@ -105,5 +105,5 @@ func findProjectRootDir(startDir string, configFilename string) (string, error) 
 		dir = filepath.Dir(dir)
 	}
 
-	return "", errors.ConfigNotFound("No cog.yaml found in parent directories.")
+	return "", errors.ConfigNotFound("No ssy.yaml found in parent directories.")
 }

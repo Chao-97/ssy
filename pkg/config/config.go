@@ -56,7 +56,7 @@ type Build struct {
 	CUDA               string    `json:"cuda,omitempty" yaml:"cuda,omitempty"`
 	CuDNN              string    `json:"cudnn,omitempty" yaml:"cudnn,omitempty"`
 	Fast               bool      `json:"fast,omitempty" yaml:"fast,omitempty"`
-	CogRuntime         bool      `json:"cog_runtime,omitempty" yaml:"cog_runtime,omitempty"`
+	CogRuntime         bool      `json:"ssy_runtime,omitempty" yaml:"ssy_runtime,omitempty"`
 	PythonOverrides    string    `json:"python_overrides,omitempty" yaml:"python_overrides,omitempty"`
 
 	pythonRequirementsContent []string
@@ -295,19 +295,19 @@ func (c *Config) ValidateAndComplete(projectDir string) error {
 
 	if c.Predict != "" {
 		if len(strings.Split(c.Predict, ".py:")) != 2 {
-			errs = append(errs, fmt.Errorf("'predict' in cog.yaml must be in the form 'predict.py:Predictor"))
+			errs = append(errs, fmt.Errorf("'predict' in ssy.yaml must be in the form 'predict.py:Predictor"))
 		}
 	}
 
 	if len(c.Build.PythonPackages) > 0 {
-		console.Warn("`python_packages` in cog.yaml is deprecated and will be removed in future versions, use `python_requirements` instead.")
+		console.Warn("`python_packages` in ssy.yaml is deprecated and will be removed in future versions, use `python_requirements` instead.")
 		if c.Build.PythonRequirements != "" {
-			errs = append(errs, fmt.Errorf("Only one of python_packages or python_requirements can be set in your cog.yaml, not both"))
+			errs = append(errs, fmt.Errorf("Only one of python_packages or python_requirements can be set in your ssy.yaml, not both"))
 		}
 	}
 
 	if len(c.Build.PreInstall) > 0 {
-		console.Warn("`pre_install` in cog.yaml is deprecated and will be removed in future versions.")
+		console.Warn("`pre_install` in ssy.yaml is deprecated and will be removed in future versions.")
 	}
 
 	// Load python_requirements into memory to simplify reading it multiple times
@@ -519,7 +519,7 @@ Compatible CuDNN versions are: %s`, c.Build.CUDA, c.Build.CuDNN, strings.Join(co
 		switch {
 		case c.Build.CUDA == "":
 			if tfCuDNN == "" {
-				return fmt.Errorf("Cog doesn't know what CUDA version is compatible with tensorflow==%s. You might need to upgrade Cog: https://github.com/replicate/cog#upgrade\n\nIf that doesn't work, you need to set the 'cuda' option in cog.yaml to set what version to use. You might be able to find this out from https://www.tensorflow.org/", tfVersion)
+				return fmt.Errorf("Cog doesn't know what CUDA version is compatible with tensorflow==%s. You might need to upgrade Cog: https://github.com/replicate/cog#upgrade\n\nIf that doesn't work, you need to set the 'cuda' option in ssy.yaml to set what version to use. You might be able to find this out from https://www.tensorflow.org/", tfVersion)
 			}
 			console.Debugf("Setting CUDA to version %s from Tensorflow version", tfCUDA)
 			c.Build.CUDA = tfCUDA
@@ -549,7 +549,7 @@ Compatible cuDNN version is: %s`, c.Build.CuDNN, tfVersion, tfCuDNN)
 		switch {
 		case c.Build.CUDA == "":
 			if len(torchCUDAs) == 0 {
-				return fmt.Errorf("Cog doesn't know what CUDA version is compatible with torch==%s. You might need to upgrade Cog: https://github.com/replicate/cog#upgrade\n\nIf that doesn't work, you need to set the 'cuda' option in cog.yaml to set what version to use. You might be able to find this out from https://pytorch.org/", torchVersion)
+				return fmt.Errorf("Cog doesn't know what CUDA version is compatible with torch==%s. You might need to upgrade Cog: https://github.com/replicate/cog#upgrade\n\nIf that doesn't work, you need to set the 'cuda' option in ssy.yaml to set what version to use. You might be able to find this out from https://pytorch.org/", torchVersion)
 			}
 			c.Build.CUDA = latestCUDAFrom(torchCUDAs)
 			console.Debugf("Setting CUDA to version %s from Torch version", c.Build.CUDA)

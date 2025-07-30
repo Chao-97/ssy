@@ -7,7 +7,7 @@ import pytest
 
 def test_run(tmpdir_factory, cog_binary):
     tmpdir = tmpdir_factory.mktemp("project")
-    with open(tmpdir / "cog.yaml", "w") as f:
+    with open(tmpdir / "ssy.yaml", "w") as f:
         cog_yaml = """
 build:
   python_version: "3.8"
@@ -25,7 +25,7 @@ build:
 
 def test_run_with_secret(tmpdir_factory, cog_binary):
     tmpdir = tmpdir_factory.mktemp("project")
-    with open(tmpdir / "cog.yaml", "w") as f:
+    with open(tmpdir / "ssy.yaml", "w") as f:
         cog_yaml = """
 build:
   python_version: "3.8"
@@ -67,7 +67,7 @@ def test_run_fast_build(cog_binary):
 
 def test_run_with_unconsumed_piped_stdin(tmpdir_factory, cog_binary):
     tmpdir = tmpdir_factory.mktemp("project")
-    with open(tmpdir / "cog.yaml", "w") as f:
+    with open(tmpdir / "ssy.yaml", "w") as f:
         cog_yaml = """
 build:
   python_version: "3.13"
@@ -87,7 +87,7 @@ build:
 
 def test_run_with_unattached_stdin(tmpdir_factory, cog_binary):
     tmpdir = tmpdir_factory.mktemp("project")
-    with open(tmpdir / "cog.yaml", "w") as f:
+    with open(tmpdir / "ssy.yaml", "w") as f:
         cog_yaml = """
 build:
   python_version: "3.13"
@@ -106,7 +106,7 @@ build:
 
 def test_run_with_piped_stdin_returned_to_stdout(tmpdir_factory, cog_binary):
     tmpdir = tmpdir_factory.mktemp("project")
-    with open(tmpdir / "cog.yaml", "w") as f:
+    with open(tmpdir / "ssy.yaml", "w") as f:
         cog_yaml = """
 build:
   python_version: "3.13"
@@ -130,7 +130,7 @@ build:
 )
 def test_run_shell_with_with_interactive_tty(tmpdir_factory, cog_binary):
     tmpdir = tmpdir_factory.mktemp("project")
-    (tmpdir / "cog.yaml").write_text(
+    (tmpdir / "ssy.yaml").write_text(
         "build:\n  python_version: '3.13'\n",
         encoding="utf-8",
     )

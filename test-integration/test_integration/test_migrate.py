@@ -24,7 +24,7 @@ def test_migrate(tmpdir_factory, cog_binary):
         timeout=DEFAULT_TIMEOUT,
     )
     assert result.returncode == 0
-    with open(os.path.join(out_dir, "cog.yaml"), encoding="utf8") as handle:
+    with open(os.path.join(out_dir, "ssy.yaml"), encoding="utf8") as handle:
         assert handle.read(), """build:
   python_version: "3.11"
   python_requirements: requirements.txt
@@ -61,7 +61,7 @@ def test_migrate_gpu(tmpdir_factory, cog_binary):
         timeout=DEFAULT_TIMEOUT,
     )
     assert result.returncode == 0
-    with open(os.path.join(out_dir, "cog.yaml"), encoding="utf8") as handle:
+    with open(os.path.join(out_dir, "ssy.yaml"), encoding="utf8") as handle:
         assert handle.read(), """build:
   gpu: true
   python_version: "3.11"

@@ -25,7 +25,7 @@ func TestMigrate(t *testing.T) {
 	require.NoError(t, err)
 
 	// Write our test configs/code
-	configFilepath := filepath.Join(dir, "cog.yaml")
+	configFilepath := filepath.Join(dir, "ssy.yaml")
 	file, err := os.Create(configFilepath)
 	require.NoError(t, err)
 	_, err = file.WriteString(`build:
@@ -57,7 +57,7 @@ class Predictor(BasePredictor):
 	// Perform the migration
 	logCtx := coglog.NewMigrateLogContext(true)
 	migrator := NewMigratorV1ToV1Fast(false, logCtx)
-	err = migrator.Migrate(t.Context(), "cog.yaml")
+	err = migrator.Migrate(t.Context(), "ssy.yaml")
 	require.NoError(t, err)
 
 	// Check config output
@@ -113,7 +113,7 @@ func TestMigrateGPU(t *testing.T) {
 	require.NoError(t, err)
 
 	// Write our test configs/code
-	configFilepath := filepath.Join(dir, "cog.yaml")
+	configFilepath := filepath.Join(dir, "ssy.yaml")
 	file, err := os.Create(configFilepath)
 	require.NoError(t, err)
 	_, err = file.WriteString(`build:
@@ -146,7 +146,7 @@ class Predictor(BasePredictor):
 	// Perform the migration
 	logCtx := coglog.NewMigrateLogContext(true)
 	migrator := NewMigratorV1ToV1Fast(false, logCtx)
-	err = migrator.Migrate(t.Context(), "cog.yaml")
+	err = migrator.Migrate(t.Context(), "ssy.yaml")
 	require.NoError(t, err)
 
 	// Check config output
@@ -178,7 +178,7 @@ func TestMigrateYAMLComments(t *testing.T) {
 	require.NoError(t, err)
 
 	// Write our test configs/code
-	configFilepath := filepath.Join(dir, "cog.yaml")
+	configFilepath := filepath.Join(dir, "ssy.yaml")
 	file, err := os.Create(configFilepath)
 	require.NoError(t, err)
 	_, err = file.WriteString(`# Here we have a YAML comment
@@ -212,7 +212,7 @@ class Predictor(BasePredictor):
 	// Perform the migration
 	logCtx := coglog.NewMigrateLogContext(true)
 	migrator := NewMigratorV1ToV1Fast(false, logCtx)
-	err = migrator.Migrate(t.Context(), "cog.yaml")
+	err = migrator.Migrate(t.Context(), "ssy.yaml")
 	require.NoError(t, err)
 
 	// Check config output

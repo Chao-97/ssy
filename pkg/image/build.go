@@ -58,7 +58,7 @@ func Build(
 	dockerCommand command.Command,
 	client registry.Client,
 	pipelinesImage bool) error {
-	console.Infof("Building Docker image from environment in cog.yaml as %s...", imageName)
+	console.Infof("Building Docker image from environment in ssy.yaml as %s...", imageName)
 	if fastFlag {
 		console.Info("Fast build enabled.")
 	}
@@ -342,7 +342,7 @@ func BuildBase(ctx context.Context, dockerClient command.Command, cfg *config.Co
 	// https://github.com/replicate/cog/issues/80
 	imageName := config.BaseDockerImageName(dir)
 
-	console.Info("Building Docker image from environment in cog.yaml...")
+	console.Info("Building Docker image from environment in ssy.yaml...")
 	generator, err := dockerfile.NewGenerator(cfg, dir, false, dockerClient, false, client, requiresCog)
 	if err != nil {
 		return "", fmt.Errorf("Error creating Dockerfile generator: %w", err)

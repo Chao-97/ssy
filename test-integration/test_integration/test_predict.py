@@ -167,7 +167,7 @@ def test_predict_runs_an_existing_image(docker_image, tmpdir_factory, cog_binary
         check=True,
     )
 
-    # Run in another directory to ensure it doesn't use cog.yaml
+    # Run in another directory to ensure it doesn't use ssy.yaml
     another_directory = tmpdir_factory.mktemp("project")
     result = subprocess.run(
         [cog_binary, "predict", "--debug", docker_image, "-i", "s=world"],
@@ -189,7 +189,7 @@ def test_predict_with_remote_image(tmpdir_factory, cog_binary):
     image_name = "r8.im/replicate/hello-world@sha256:5c7d5dc6dd8bf75c1acaa8565735e7986bc5b66206b55cca93cb72c9bf15ccaa"
     subprocess.run(["docker", "rmi", "-f", image_name], check=True)
 
-    # Run in another directory to ensure it doesn't use cog.yaml
+    # Run in another directory to ensure it doesn't use ssy.yaml
     another_directory = tmpdir_factory.mktemp("project")
     result = subprocess.run(
         [cog_binary, "predict", image_name, "-i", "text=world"],

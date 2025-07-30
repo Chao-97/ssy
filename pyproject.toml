@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools_scm[toml]"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cog"
+name = "ssy"
 description = "Containers for machine learning"
 readme = "README.md"
 authors = [{ name = "Replicate", email = "team@replicate.com" }]
@@ -36,26 +36,26 @@ dynamic = ["version"]
 
 [dependency-groups]
 dev = [
-    "build>=1.2.2.post1",
-    "ruff",
-    "setuptools-scm>=8.2.0",
-    "tox>=4.25.0",
-    "tox-uv>=1.13.1",
+  "build>=1.2.2.post1",
+  "ruff",
+  "setuptools-scm>=8.2.0",
+  "tox>=4.25.0",
+  "tox-uv>=1.13.1",
 ]
 
 test = [
-    "httpx",
-    "hypothesis",
-    "numpy",
-    "pillow",
-    "pytest",
-    "pytest-asyncio",
-    "pytest-httpserver",
-    "pytest-timeout",
-    "pytest-xdist",
-    "pytest-cov",
-    "responses",
-    "pexpect",
+  "httpx",
+  "hypothesis",
+  "numpy",
+  "pillow",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-httpserver",
+  "pytest-timeout",
+  "pytest-xdist",
+  "pytest-cov",
+  "responses",
+  "pexpect",
 ]
 
 [tool.setuptools_scm]
@@ -87,7 +87,7 @@ include-package-data = false
 
 [tool.setuptools.packages.find]
 where = ["python"]
-include = ["cog*"]
+include = ["cog*", "ssy*"]
 exclude = ["tests*"]
 
 [tool.pylint.main]

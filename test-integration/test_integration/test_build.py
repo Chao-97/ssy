@@ -23,7 +23,7 @@ def test_build_without_predictor(docker_image, cog_binary):
 
 
 def test_build_names_uses_image_option_in_cog_yaml(tmpdir, docker_image, cog_binary):
-    with open(tmpdir / "cog.yaml", "w") as f:
+    with open(tmpdir / "ssy.yaml", "w") as f:
         cog_yaml = f"""
 image: {docker_image}
 build:
@@ -99,7 +99,7 @@ def test_build_invalid_schema(docker_image, cog_binary):
 
 @pytest.mark.skipif(os.environ.get("CI") != "true", reason="only runs in CI")
 def test_build_gpu_model_on_cpu(tmpdir, docker_image, cog_binary):
-    with open(tmpdir / "cog.yaml", "w") as f:
+    with open(tmpdir / "ssy.yaml", "w") as f:
         cog_yaml = """
 build:
   python_version: 3.8

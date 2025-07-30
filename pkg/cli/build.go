@@ -37,7 +37,7 @@ const useCogBaseImageFlagKey = "use-cog-base-image"
 func newBuildCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "build",
-		Short:   "Build an image from cog.yaml",
+		Short:   "Build an image from ssy.yaml",
 		Args:    cobra.NoArgs,
 		RunE:    buildCommand,
 		PreRunE: checkMutuallyExclusiveFlags,
@@ -162,7 +162,7 @@ func addUseCudaBaseImageFlag(cmd *cobra.Command) {
 }
 
 func addDockerfileFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&buildDockerfileFile, "dockerfile", "", "Path to a Dockerfile. If set, cog will use this Dockerfile instead of generating one from cog.yaml")
+	cmd.Flags().StringVar(&buildDockerfileFile, "dockerfile", "", "Path to a Dockerfile. If set, cog will use this Dockerfile instead of generating one from ssy.yaml")
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if f.Name == "dockerfile" {
 			f.Hidden = true
@@ -205,7 +205,7 @@ func addLocalImage(cmd *cobra.Command) {
 
 func addConfigFlag(cmd *cobra.Command) {
 	const configFlag = "f"
-	cmd.Flags().StringVar(&configFilename, configFlag, "cog.yaml", "The name of the config file.")
+	cmd.Flags().StringVar(&configFilename, configFlag, "ssy.yaml", "The name of the config file.")
 }
 
 func checkMutuallyExclusiveFlags(cmd *cobra.Command, args []string) error {

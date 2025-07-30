@@ -23,7 +23,7 @@ type buildLog struct {
 	DurationMs float32 `json:"length_ms"`
 	BuildError *string `json:"error"`
 	Fast       bool    `json:"fast"`
-	CogRuntime bool    `json:"cog_runtime"`
+	CogRuntime bool    `json:"ssy_runtime"`
 	LocalImage bool    `json:"local_image"`
 }
 
@@ -31,7 +31,7 @@ type pushLog struct {
 	DurationMs float32 `json:"length_ms"`
 	BuildError *string `json:"error"`
 	Fast       bool    `json:"fast"`
-	CogRuntime bool    `json:"cog_runtime"`
+	CogRuntime bool    `json:"ssy_runtime"`
 	LocalImage bool    `json:"local_image"`
 }
 

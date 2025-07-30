@@ -316,7 +316,7 @@ def strip_model_source_code(
             ]
         )
     else:
-        # use class_name specified in cog.yaml as method_name
+        # use class_name specified in ssy.yaml as method_name
         method_names = class_names
         function_source = extract_function_source(source_code, method_names)
         if not function_source:

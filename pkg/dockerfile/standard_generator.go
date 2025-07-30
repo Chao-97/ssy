@@ -447,24 +447,28 @@ func (g *StandardGenerator) installCog() (string, error) {
 		return "", nil
 	}
 
-	if g.Config.Build.CogRuntime {
-		// We need fast-* compliant Python version to reconstruct coglet venv PYTHONPATH
-		if !CheckMajorMinorOnly(g.Config.Build.PythonVersion) {
-			return "", fmt.Errorf("Python version must be <major>.<minor>")
-		}
-		cmds := []string{
-			"ENV R8_SSY_VERSION=coglet",
-			"ENV R8_PYTHON_VERSION=" + g.Config.Build.PythonVersion,
-			"RUN pip config set global.index-url " + global.AliyunIndexURL,
-			"RUN curl -o /usr/local/" + global.ShengsuanPyLibDistName + " -L " + global.ShengsuanPyLibAddress,
-			"RUN pip install /usr/local/" + global.ShengsuanPyLibDistName,
-		}
-		return strings.Join(cmds, "\n"), nil
-	}
+	// if g.Config.Build.CogRuntime {
+	// 	// We need fast-* compliant Python version to reconstruct coglet venv PYTHONPATH
+	// 	if !CheckMajorMinorOnly(g.Config.Build.PythonVersion) {
+	// 		return "", fmt.Errorf("Python version must be <major>.<minor>")
+	// 	}
+	// 	m, err := NewMonobaseMatrix(http.DefaultClient)
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+	// 	cmds := []string{
+	// 		"ENV R8_SSY_VERSION=coglet",
+	// 		"ENV R8_PYTHON_VERSION=" + g.Config.Build.PythonVersion,
+	// 		"RUN pip config set global.index-url " + global.AliyunIndexURL,
+	// 		"RUN curl -o /usr/local/" + global.ShengsuanPyLibDistName + " -L " + global.ShengsuanPyLibAddress,
+	// 		"RUN pip install /usr/local/" + global.ShengsuanPyLibDistName,
+	// 	}
+	// 	return strings.Join(cmds, "\n"), nil
+	// }
 
 	// cog-runtime does not support training yet
 	if g.Config.Train == "" {
-		console.Warnf("Major SSY runtime upgrade available. Opt in now by setting build.ssy_runtime: true in ssy.yaml.")
+		// console.Warnf("Major SSY runtime upgrade available. Opt in now by setting build.ssy_runtime: true in ssy.yaml.")
 		// console.Warnf("More: https://replicate.com/changelog/2025-07-21-cog-runtime")
 	}
 

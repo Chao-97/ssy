@@ -6,7 +6,7 @@ var (
 	BuildTime               = "none"
 	Debug                   = false
 	ProfilingEnabled        = false
-	ReplicateRegistryHost   = "registry.shengsuanyun.com/ssy"
+	ReplicateRegistryHost   = "r8.im"
 	ReplicateWebsiteHost    = "replicate.com"
 	ShengsuanRegistryHost   = "registry.shengsuanyun.com"
 	ShengsuanApiHost        = "api.shengsuanyun.com"

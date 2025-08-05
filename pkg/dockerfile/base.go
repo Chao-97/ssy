@@ -16,7 +16,7 @@ import (
 const MinimumCUDAVersion = "11.6"
 const MinimumPythonVersion = "3.8"
 const MinimumTorchVersion = "1.13.1"
-const CogBaseImageName = "ssy-base"
+const CogBaseImageName = "cog-base"
 
 var (
 	baseImageSystemPackages = []string{

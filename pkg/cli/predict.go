@@ -643,5 +643,5 @@ func parseInputFlags(inputs []string, schema *openapi3.T) (predict.Inputs, error
 }
 
 func addSetupTimeoutFlag(cmd *cobra.Command) {
-	cmd.Flags().Uint32Var(&setupTimeout, "setup-timeout", 5*60, "The timeout for a container to setup (in seconds).")
+	cmd.Flags().Uint32Var(&setupTimeout, "setup-timeout", 20*60, "The timeout for a container to setup (in seconds).")
 }

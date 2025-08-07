@@ -95,7 +95,7 @@ func readTokenFromStdin() (string, error) {
 
 // 交互式获取token
 func promptToken() (string, error) {
-	console.Info("Please obtain your login token from https://www.shengsuanyun.com/serverless/token")
+	console.Info("Please obtain your login token from https://console.shengsuanyun.com/user/keys")
 	console.Info("After copying the token, paste it below and press Enter:")
 	fmt.Print("Token: ")
 	var token string

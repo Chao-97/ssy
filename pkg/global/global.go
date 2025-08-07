@@ -18,7 +18,7 @@ var (
 	SetDefaultARCH           = "ARG ARCH=amd64"
 	ShengsuanOSSAddress      = "https://shengsuanyun.oss-cn-shanghai.aliyuncs.com"
 	ShengsuanOSSBucketName   = "/ssy"
-	ShengsuanOSSPyLibSrcName = "/ssy-0.16.1-py3-none-${ARCH}.whl"
+	ShengsuanOSSPyLibSrcName = "/ssy-0.16.1.1-py3-none-any.whl"
 	ShengsuanPyLibDistName   = "ssy-0.16.1.dev2-py3-none-any.whl"
 	ShengsuanPyLibAddress    = ShengsuanOSSAddress + ShengsuanOSSBucketName + ShengsuanOSSPyLibSrcName
 	AliyunIndexURL           = "https://mirrors.aliyun.com/pypi/simple"

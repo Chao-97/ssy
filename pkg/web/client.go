@@ -358,7 +358,7 @@ func (c *Client) versionFromManifest(ctx context.Context, image string, weights 
 		Challenges:    fileChallenges,
 	}
 
-	if pushID, ok := manifest.Config.Labels["run.cog.push_id"]; ok {
+	if pushID, ok := manifest.Config.Labels["run.ssy.push_id"]; ok {
 		version.PushID = pushID
 	}
 

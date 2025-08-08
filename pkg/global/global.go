@@ -1,5 +1,7 @@
 package global
 
+import "os"
+
 var (
 	Version                 = "dev"
 	Commit                  = ""
@@ -11,8 +13,12 @@ var (
 	ShengsuanRegistryHost   = "registry.shengsuanyun.com"
 	ShengsuanApiHost        = "api.shengsuanyun.com"
 	ShengsuanWebsiteHost    = "www.shengsuanyun.com"
-	LabelNamespace          = "run.cog."
+	LabelNamespace          = "run.ssy."
 	CogBuildArtifactsFolder = ".cog"
+	CogBaseImageName        = "cog-base"
+
+	// Supported registry hosts for authentication
+	SupportedRegistries = []string{ReplicateRegistryHost, ShengsuanRegistryHost}
 
 	// SSY related constants
 	SetDefaultARCH           = "ARG ARCH=amd64"
@@ -23,3 +29,21 @@ var (
 	ShengsuanPyLibAddress    = ShengsuanOSSAddress + ShengsuanOSSBucketName + ShengsuanOSSPyLibSrcName
 	AliyunIndexURL           = "https://mirrors.aliyun.com/pypi/simple"
 )
+
+// Initialize sets up global variables based on environment variables
+func Initialize() {
+	mirror := os.Getenv("MIRROR")
+
+	if mirror == "cn" {
+		// Use China mirror configuration
+		ReplicateRegistryHost = "registry.cn-shanghai.aliyuncs.com"
+		CogBaseImageName = "ssy-base"
+	} else {
+		// Use default configuration
+		ReplicateRegistryHost = "r8.im"
+		CogBaseImageName = "cog-base"
+	}
+
+	// Update SupportedRegistries after changing ReplicateRegistryHost
+	SupportedRegistries = []string{ReplicateRegistryHost, ShengsuanRegistryHost}
+}

@@ -68,7 +68,7 @@ def test_build_with_model(docker_image, cog_binary):
         ).stdout
     )
     labels = image[0]["Config"]["Labels"]
-    schema = json.loads(labels["run.cog.openapi_schema"])
+    schema = json.loads(labels["run.ssy.openapi_schema"])
 
     assert schema["components"]["schemas"]["Input"] == {
         "title": "Input",
@@ -164,8 +164,8 @@ class Predictor(BasePredictor):
     )
     labels = image[0]["Config"]["Labels"]
 
-    assert len(labels["run.cog.version"]) > 0
-    assert json.loads(labels["run.cog.config"]) == {
+    assert len(labels["run.ssy.version"]) > 0
+    assert json.loads(labels["run.ssy.config"]) == {
         "build": {
             "python_version": "3.8",
             "gpu": True,
@@ -174,7 +174,7 @@ class Predictor(BasePredictor):
         },
         "predict": "predict.py:Predictor",
     }
-    assert "run.cog.openapi_schema" in labels
+    assert "run.ssy.openapi_schema" in labels
 
     assert len(labels["org.opencontainers.image.version"]) > 0
     assert len(labels["org.opencontainers.image.revision"]) > 0
@@ -239,7 +239,7 @@ def test_build_base_image_sha(docker_image, cog_binary):
         ).stdout
     )
     labels = image[0]["Config"]["Labels"]
-    base_layer_hash = labels["run.cog.cog-base-image-last-layer-sha"]
+    base_layer_hash = labels["run.ssy.cog-base-image-last-layer-sha"]
     layers = image[0]["RootFS"]["Layers"]
     assert base_layer_hash in layers
 
@@ -361,7 +361,7 @@ def test_pip_freeze(docker_image, cog_binary):
         ).stdout
     )
     labels = image[0]["Config"]["Labels"]
-    pip_freeze = labels["run.cog.pip_freeze"]
+    pip_freeze = labels["run.ssy.pip_freeze"]
     pip_freeze = "\n".join(
         [
             x
@@ -550,7 +550,7 @@ def test_model_dependencies(docker_image, cog_binary):
         ).stdout
     )
     labels = image[0]["Config"]["Labels"]
-    model_dependencies = labels["run.cog.r8_model_dependencies"]
+    model_dependencies = labels["run.ssy.r8_model_dependencies"]
     assert model_dependencies == '["pipelines-beta/upcase"]'
 
 

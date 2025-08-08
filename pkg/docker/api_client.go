@@ -31,6 +31,7 @@ import (
 	"github.com/replicate/go/types/ptr"
 
 	"github.com/replicate/cog/pkg/docker/command"
+	"github.com/replicate/cog/pkg/global"
 	"github.com/replicate/cog/pkg/util/console"
 )
 
@@ -71,14 +72,19 @@ func NewAPIClient(ctx context.Context, opts ...Option) (*apiClient, error) {
 	}
 
 	authConfig := make(map[string]registry.AuthConfig)
-	userInfo, err := loadUserInformation(ctx, "r8.im")
-	if err != nil {
-		return nil, fmt.Errorf("error loading user information: %w, you may need to authenticate using cog login", err)
-	}
-	authConfig["r8.im"] = registry.AuthConfig{
-		Username:      userInfo.Username,
-		Password:      userInfo.Token,
-		ServerAddress: "r8.im",
+
+	// Load auth configs for commonly used registries
+	for _, registryHost := range global.SupportedRegistries {
+		userInfo, err := loadUserInformation(ctx, registryHost)
+		if err != nil {
+			console.Debugf("error loading user information for %s: %v", registryHost, err)
+			continue // Skip if auth info not available, don't fail the entire client
+		}
+		authConfig[registryHost] = registry.AuthConfig{
+			Username:      userInfo.Username,
+			Password:      userInfo.Token,
+			ServerAddress: registryHost,
+		}
 	}
 
 	for _, opt := range clientOptions.authConfigs {

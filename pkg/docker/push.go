@@ -27,9 +27,9 @@ func Push(ctx context.Context, image string, fast bool, projectDir string, comma
 		return PipelinePush(ctx, image, projectDir, apiClient, client, cfg)
 	}
 
-	if err := webClient.PostPushStart(ctx, buildInfo.BuildID, buildInfo.BuildTime); err != nil {
-		console.Warnf("Failed to send build timings to server: %v", err)
-	}
+	// if err := webClient.PostPushStart(ctx, buildInfo.BuildID, buildInfo.BuildTime); err != nil {
+	// 	console.Warnf("Failed to send build timings to server: %v", err)
+	// }
 
 	if fast {
 		monobeamClient := monobeam.NewClient(client)

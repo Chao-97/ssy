@@ -126,7 +126,7 @@ func push(cmd *cobra.Command, args []string) error {
 		// Don't insert build ID but continue anyways
 		console.Debugf("Failed to create build ID %v", err)
 	} else {
-		annotations["run.cog.push_id"] = buildID.String()
+		annotations["run.ssy.push_id"] = buildID.String()
 	}
 
 	startBuildTime := time.Now()

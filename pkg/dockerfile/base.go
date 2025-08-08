@@ -16,7 +16,6 @@ import (
 const MinimumCUDAVersion = "11.6"
 const MinimumPythonVersion = "3.8"
 const MinimumTorchVersion = "1.13.1"
-const CogBaseImageName = "cog-base"
 
 var (
 	baseImageSystemPackages = []string{
@@ -306,7 +305,7 @@ func BaseImageName(cudaVersion string, pythonVersion string, torchVersion string
 		tag = "latest"
 	}
 
-	return global.ReplicateRegistryHost + "/" + CogBaseImageName + ":" + tag
+	return global.ReplicateRegistryHost + "/" + global.CogBaseImageName + ":" + tag
 }
 
 func BaseImageConfigurationExists(ctx context.Context, client registry.Client, cudaVersion, pythonVersion, torchVersion string, generate bool) (bool, string, string, string, error) {

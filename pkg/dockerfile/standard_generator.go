@@ -165,10 +165,10 @@ func (g *StandardGenerator) GenerateInitialSteps(ctx context.Context) (string, e
 	if err != nil {
 		return "", err
 	}
-
+	syntax := global.DockerMirrorPrefix + "docker/dockerfile:1.4"
 	if g.IsUsingCogBaseImage() {
 		steps := []string{
-			"#syntax=docker/dockerfile:1.4",
+			"#syntax=" + syntax,
 			"FROM " + baseImage,
 			global.SetDefaultARCH,
 			g.setupAptSources(),
@@ -188,7 +188,7 @@ func (g *StandardGenerator) GenerateInitialSteps(ctx context.Context) (string, e
 	}
 
 	steps := []string{
-		"#syntax=docker/dockerfile:1.4",
+		"#syntax=" + syntax,
 		"FROM " + baseImage,
 		global.SetDefaultARCH,
 		g.setupAptSources(),
@@ -282,10 +282,11 @@ func (g *StandardGenerator) generateForWeights() (string, []string, []string, er
 	if err != nil {
 		return "", nil, nil, err
 	}
+	syntax := global.DockerMirrorPrefix + "docker/dockerfile:1.4"
 	// generate dockerfile to store these model weights files
-	dockerfileContents := `#syntax=docker/dockerfile:1.4
+	dockerfileContents := fmt.Sprintf(`#syntax=%s
 FROM scratch
-`
+`, syntax)
 	for _, p := range append(modelDirs, modelFiles...) {
 		dockerfileContents += fmt.Sprintf("\nCOPY %s %s", p, path.Join("/src", p))
 	}

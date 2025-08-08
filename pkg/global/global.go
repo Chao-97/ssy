@@ -28,6 +28,9 @@ var (
 	ShengsuanPyLibDistName   = "ssy-0.16.1.dev2-py3-none-any.whl"
 	ShengsuanPyLibAddress    = ShengsuanOSSAddress + ShengsuanOSSBucketName + ShengsuanOSSPyLibSrcName
 	AliyunIndexURL           = "https://mirrors.aliyun.com/pypi/simple"
+
+	// Docker registry mirror settings
+	DockerMirrorPrefix = ""
 )
 
 // Initialize sets up global variables based on environment variables
@@ -39,11 +42,13 @@ func Initialize() {
 		ReplicateRegistryHost = "registry.cn-shanghai.aliyuncs.com/shengsuan"
 		CogBaseImageName = "ssy-base"
 		ShengsuanRegistryHost = "registry.shengsuanyun.com"
+		DockerMirrorPrefix = "docker.m.daocloud.io/"
 	} else {
 		// Use default configuration
 		ReplicateRegistryHost = "r8.im"
 		CogBaseImageName = "cog-base"
 		ShengsuanRegistryHost = "150605664230.dkr.ecr.us-east-1.amazonaws.com"
+		DockerMirrorPrefix = ""
 	}
 
 	// Update SupportedRegistries after changing ReplicateRegistryHost

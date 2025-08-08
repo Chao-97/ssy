@@ -79,8 +79,23 @@ func login(cmd *cobra.Command, args []string) error {
 	if err := docker.SaveLoginToken(ctx, registryHost, username, accessToken); err != nil {
 		return err
 	}
-	ssyName := strings.Split(username, "+")
-	console.Infof("You've successfully authenticated as %s! You can now use the '%s' registry.", ssyName[1], registryHost)
+
+	// Extract display name based on username format
+	var displayName string
+	if strings.Contains(username, "+") {
+		// Format: robot_username+token (for cn mirror)
+		parts := strings.Split(username, "+")
+		if len(parts) > 0 && strings.HasPrefix(parts[0], "robot_") {
+			displayName = strings.TrimPrefix(parts[0], "robot_")
+		} else {
+			displayName = parts[0]
+		}
+	} else {
+		// Direct username format (for other cases)
+		displayName = username
+	}
+
+	console.Infof("You've successfully authenticated as %s! You can now use the '%s' registry.", displayName, registryHost)
 
 	return nil
 }
@@ -108,7 +123,8 @@ func promptToken() (string, error) {
 
 // 验证token
 func verifyToken(token string) (string, string, error) {
-	url := "https://" + global.ShengsuanApiHost + "/v2/user/login"
+	mirror := os.Getenv("MIRROR")
+	url := "https://" + global.ShengsuanApiHost + "/v2/user/login?mirror=" + mirror
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to create HTTP request: %w", err)

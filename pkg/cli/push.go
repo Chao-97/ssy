@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -22,6 +23,28 @@ import (
 	"github.com/replicate/cog/pkg/util/console"
 )
 
+// buildFullImageName constructs the full image name by prepending the appropriate registry host
+// based on the MIRROR environment variable if the imageName doesn't already contain a registry host
+func buildFullImageName(imageName string) string {
+	// If the image name already contains a registry host (has a slash and domain-like prefix), return as-is
+	if strings.Contains(imageName, "/") && (strings.Contains(imageName, ".") || strings.Contains(imageName, ":")) {
+		return imageName
+	}
+
+	// Get the appropriate registry host based on MIRROR environment variable
+	mirror := os.Getenv("MIRROR")
+	var registryHost string
+
+	if mirror == "cn" {
+		registryHost = global.ShengsuanRegistryHost
+	} else {
+		registryHost = global.ReplicateRegistryHost
+	}
+
+	// Prepend the registry host to the image name
+	return fmt.Sprintf("%s/%s", registryHost, imageName)
+}
+
 type VerifyModel struct {
 	Username  string `json:"user_name"`
 	Modelname string `json:"model_name"`
@@ -37,10 +60,17 @@ func newPushCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "push [IMAGE]",
 
-		Short:   "Build and push model in current directory to a Docker registry",
-		Example: `ssy push registry.shengsuanyun.com/your-username/hotdog-detector`,
-		RunE:    push,
-		Args:    cobra.MaximumNArgs(1),
+		Short: "Build and push model in current directory to a Docker registry",
+		Example: `ssy push your-username/model-name:tag
+
+The registry host will be automatically selected based on the MIRROR environment variable:
+- MIRROR=cn: Uses registry.shengsuanyun.com
+- Default: Uses 150605664230.dkr.ecr.us-east-1.amazonaws.com
+
+You can also specify the full registry URL if needed:
+ssy push registry.shengsuanyun.com/your-username/model-name:tag`,
+		RunE: push,
+		Args: cobra.MaximumNArgs(1),
 	}
 	addSecretsFlag(cmd)
 	addNoCacheFlag(cmd)
@@ -93,29 +123,32 @@ func push(cmd *cobra.Command, args []string) error {
 	}
 
 	if imageName == "" {
-		err = fmt.Errorf("To push images, you must either set the 'image' option in ssy.yaml or pass an image name as an argument. For example, 'ssy push registry.shengsuanyun.com/your-username/hotdog-detector'")
+		err = fmt.Errorf("To push images, you must either set the 'image' option in ssy.yaml or pass an image name as an argument. For example, 'ssy push your-username/hotdog-detector'")
 		logClient.EndPush(ctx, err, logCtx)
 		return err
 	}
 
+	// Auto-prepend registry host if not already present
+	fullImageName := buildFullImageName(imageName)
+	console.Debugf("Original image name: %s, Full image name: %s", imageName, fullImageName)
+
 	shengsuanPrefix := fmt.Sprintf("%s/", global.ShengsuanRegistryHost)
-	if strings.HasPrefix(imageName, shengsuanPrefix) {
+	if strings.HasPrefix(fullImageName, shengsuanPrefix) {
 		// 从胜算云获取model是否存在
-		var datas = strings.Split(imageName, "/")
+		var datas = strings.Split(fullImageName, "/")
 		if ok, err := verifyModel(datas[1], datas[2]); err != nil {
-			err = fmt.Errorf("Unable to find Shengsuan existing model for %s. Go to shengsuanyun.com and create a new model before pushing.", imageName)
+			err = fmt.Errorf("Unable to find Shengsuan existing model for %s. Go to shengsuanyun.com and create a new model before pushing.", fullImageName)
 			logClient.EndPush(ctx, err, logCtx)
 			return err
 		} else if !ok {
-			err = fmt.Errorf("Unable to find Shengsuan existing model for %s. Go to shengsuanyun.com and create a new model before pushing.", imageName)
+			err = fmt.Errorf("Unable to find Shengsuan existing model for %s. Go to shengsuanyun.com and create a new model before pushing.", fullImageName)
 			logClient.EndPush(ctx, err, logCtx)
 			return err
 		}
 	}
 
-	replicatePrefix := fmt.Sprintf("%s/", global.ReplicateRegistryHost)
-	if !strings.HasPrefix(imageName, replicatePrefix) && !strings.HasPrefix(imageName, shengsuanPrefix) && buildLocalImage {
-		err = fmt.Errorf("Unable to push a local image model to a non replicate/shengsuan host, please disable the local image flag before pushing to this host.")
+	if !strings.HasPrefix(fullImageName, shengsuanPrefix) && buildLocalImage {
+		err = fmt.Errorf("Unable to push a local image model to a non shengsuan host, please disable the local image flag before pushing to this host.")
 		logClient.EndPush(ctx, err, logCtx)
 		return err
 	}
@@ -135,7 +168,7 @@ func push(cmd *cobra.Command, args []string) error {
 		ctx,
 		cfg,
 		projectDir,
-		imageName,
+		fullImageName,
 		buildSecrets,
 		buildNoCache,
 		buildSeparateWeights,
@@ -158,27 +191,20 @@ func push(cmd *cobra.Command, args []string) error {
 
 	buildDuration := time.Since(startBuildTime)
 
-	console.Infof("\nPushing image '%s'...", imageName)
+	console.Infof("\nPushing image '%s'...", fullImageName)
 	if buildFast {
 		console.Info("Fast push enabled.")
 	}
 
-	err = docker.Push(ctx, imageName, buildFast, projectDir, dockerClient, docker.BuildInfo{
+	err = docker.Push(ctx, fullImageName, buildFast, projectDir, dockerClient, docker.BuildInfo{
 		BuildTime: buildDuration,
 		BuildID:   buildID.String(),
 		Pipeline:  pipelinesImage,
 	}, client, cfg)
 	if err != nil {
 		if strings.Contains(err.Error(), "NAME_UNKNOWN") || strings.Contains(err.Error(), "404") {
-			var hostName string
-			var websiteHost string
-			if strings.HasPrefix(imageName, shengsuanPrefix) {
-				hostName = "Shengsuan"
-				websiteHost = "shengsuan.com"
-			} else {
-				hostName = "Replicate"
-				websiteHost = "replicate.com"
-			}
+			hostName := "Shengsuan"
+			websiteHost := "shengsuan.com"
 			err = fmt.Errorf("Unable to find existing %s model for %s. "+
 				"Go to %s and create a new model before pushing."+
 				"\n\n"+
@@ -187,7 +213,7 @@ func push(cmd *cobra.Command, args []string) error {
 				"This can happen if you did `sudo ssy login` instead of `ssy login` "+
 				"or `sudo ssy push` instead of `ssy push`, "+
 				"which causes Docker to use the wrong Docker credentials.",
-				hostName, imageName, websiteHost)
+				hostName, fullImageName, websiteHost)
 			logClient.EndPush(ctx, err, logCtx)
 			return err
 		}
@@ -196,13 +222,10 @@ func push(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	console.Infof("Image '%s' pushed", imageName)
-	if strings.HasPrefix(imageName, shengsuanPrefix) {
-		shengsuanPage := fmt.Sprintf("https://%s", strings.Replace(imageName, global.ShengsuanRegistryHost, global.ShengsuanWebsiteHost, 1))
+	console.Infof("Image '%s' pushed", fullImageName)
+	if strings.HasPrefix(fullImageName, shengsuanPrefix) {
+		shengsuanPage := fmt.Sprintf("https://%s", strings.Replace(fullImageName, global.ShengsuanRegistryHost, global.ShengsuanWebsiteHost, 1))
 		console.Infof("\nRun your model on Shengsuan:\n    %s", shengsuanPage)
-	} else if strings.HasPrefix(imageName, replicatePrefix) {
-		replicatePage := fmt.Sprintf("https://%s", strings.Replace(imageName, global.ReplicateRegistryHost, global.ReplicateWebsiteHost, 1))
-		console.Infof("\nRun your model on Replicate:\n    %s", replicatePage)
 	}
 	logClient.EndPush(ctx, nil, logCtx)
 

@@ -38,10 +38,12 @@ func Initialize() {
 		// Use China mirror configuration
 		ReplicateRegistryHost = "registry.cn-shanghai.aliyuncs.com"
 		CogBaseImageName = "ssy-base"
+		ShengsuanRegistryHost = "registry.shengsuanyun.com"
 	} else {
 		// Use default configuration
 		ReplicateRegistryHost = "r8.im"
 		CogBaseImageName = "cog-base"
+		ShengsuanRegistryHost = "150605664230.dkr.ecr.us-east-1.amazonaws.com"
 	}
 
 	// Update SupportedRegistries after changing ReplicateRegistryHost

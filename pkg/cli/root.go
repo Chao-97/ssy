@@ -23,9 +23,6 @@ https://github.com/replicate/cog`,
 		Version: fmt.Sprintf("%s (built %s)", global.Version, global.BuildTime),
 		// This stops errors being printed because we print them in cmd/cog/cog.go
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			// Initialize global variables based on environment
-			global.Initialize()
-
 			if global.Debug {
 				console.SetLevel(console.DebugLevel)
 			}

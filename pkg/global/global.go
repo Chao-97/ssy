@@ -36,7 +36,7 @@ func Initialize() {
 
 	if mirror == "cn" {
 		// Use China mirror configuration
-		ReplicateRegistryHost = "registry.cn-shanghai.aliyuncs.com"
+		ReplicateRegistryHost = "registry.cn-shanghai.aliyuncs.com/shengsuan"
 		CogBaseImageName = "ssy-base"
 		ShengsuanRegistryHost = "registry.shengsuanyun.com"
 	} else {

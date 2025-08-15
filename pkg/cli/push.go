@@ -34,7 +34,9 @@ func buildFullImageName(imageName string) string {
 	// Get the appropriate registry host based on MIRROR environment variable
 	mirror := os.Getenv("MIRROR")
 	var registryHost string
-
+	if mirror == "" {
+		mirror = "cn"
+	}
 	if mirror == "cn" {
 		registryHost = global.ShengsuanRegistryHost
 	} else {

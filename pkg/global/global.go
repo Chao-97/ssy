@@ -36,10 +36,12 @@ var (
 // Initialize sets up global variables based on environment variables
 func Initialize() {
 	mirror := os.Getenv("MIRROR")
-
+	if mirror == "" {
+		mirror = "cn"
+	}
 	if mirror == "cn" {
 		// Use China mirror configuration
-		ReplicateRegistryHost = "registry.cn-shanghai.aliyuncs.com/shengsuan"
+		ReplicateRegistryHost = "shengsuanyun-cn-shanghai.cr.volces.com/shengsuanyun"
 		CogBaseImageName = "ssy-base"
 		ShengsuanRegistryHost = "registry.shengsuanyun.com"
 		DockerMirrorPrefix = "docker.m.daocloud.io/"

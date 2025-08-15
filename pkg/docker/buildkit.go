@@ -19,6 +19,7 @@ import (
 
 	cogconfig "github.com/replicate/cog/pkg/config"
 	"github.com/replicate/cog/pkg/docker/command"
+	"github.com/replicate/cog/pkg/global"
 	"github.com/replicate/cog/pkg/util/console"
 )
 
@@ -121,7 +122,7 @@ func solveOptFromImageOptions(buildDir string, opts command.ImageBuildOptions) (
 	// add auth provider to the session so the local engine can pull and push images
 	solveOpts.Session = append(
 		solveOpts.Session,
-		newBuildkitAuthProvider("r8.im"),
+		newBuildkitAuthProvider(global.ShengsuanRegistryHost),
 	)
 
 	// add secrets to the session

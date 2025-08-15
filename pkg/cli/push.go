@@ -26,13 +26,26 @@ import (
 // buildFullImageName constructs the full image name by prepending the appropriate registry host
 // based on the MIRROR environment variable if the imageName doesn't already contain a registry host
 func buildFullImageName(imageName string) string {
-	// If the image name already contains a registry host (has a slash and domain-like prefix), return as-is
-	if strings.Contains(imageName, "/") && (strings.Contains(imageName, ".") || strings.Contains(imageName, ":")) {
-		return imageName
+	// Check if the image name already contains a registry host
+	// A registry host is identified by having a domain name with a dot before the first slash
+	// Examples:
+	//   - "registry.shengsuanyun.com/chao97/model:tag" -> has registry host
+	//   - "localhost:5000/chao97/model:tag" -> has registry host (localhost with port)
+	//   - "chao97/model:tag" -> no registry host (just username/repo:tag)
+	firstSlash := strings.Index(imageName, "/")
+	if firstSlash > 0 {
+		prefix := imageName[:firstSlash]
+		// Check if prefix looks like a registry host (contains dot or colon indicating domain/port)
+		if strings.Contains(prefix, ".") || strings.Contains(prefix, ":") {
+			return imageName
+		}
 	}
 
 	// Get the appropriate registry host based on MIRROR environment variable
 	mirror := os.Getenv("MIRROR")
+	if mirror == "" {
+		mirror = "cn"
+	}
 	var registryHost string
 
 	if mirror == "cn" {

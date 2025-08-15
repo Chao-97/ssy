@@ -10,9 +10,10 @@ var (
 	ProfilingEnabled        = false
 	ReplicateRegistryHost   = "r8.im"
 	ReplicateWebsiteHost    = "replicate.com"
-	ShengsuanRegistryHost   = "registry.shengsuanyun.com"
-	ShengsuanApiHost        = "api.shengsuanyun.com"
-	ShengsuanWebsiteHost    = "www.shengsuanyun.com"
+	ShengsuanRegistryHost   = "registry.xiamen-a.cloud.xmtyu.com"
+	ShengsuanApiHost        = "api.cloud.xmtyu.com"
+	ShengsuanWebsiteHost    = "cloud.xmtyu.com"
+	ShengsuanApiTokenHost   = "https://cloud.xmtyu.com/control/serverless/token"
 	LabelNamespace          = "run.ssy."
 	CogBuildArtifactsFolder = ".cog"
 	CogBaseImageName        = "cog-base"
@@ -36,18 +37,20 @@ var (
 // Initialize sets up global variables based on environment variables
 func Initialize() {
 	mirror := os.Getenv("MIRROR")
-
+	if mirror == "" {
+		mirror = "cn"
+	}
 	if mirror == "cn" {
 		// Use China mirror configuration
-		ReplicateRegistryHost = "registry.cn-shanghai.aliyuncs.com/shengsuan"
-		CogBaseImageName = "ssy-base"
-		ShengsuanRegistryHost = "registry.shengsuanyun.com"
+		ReplicateRegistryHost = "r8.im"
+		CogBaseImageName = "cog-base"
+		ShengsuanRegistryHost = "registry.xiamen-a.cloud.xmtyu.com"
 		DockerMirrorPrefix = "docker.m.daocloud.io/"
 	} else {
 		// Use default configuration
 		ReplicateRegistryHost = "r8.im"
 		CogBaseImageName = "cog-base"
-		ShengsuanRegistryHost = "150605664230.dkr.ecr.us-east-1.amazonaws.com"
+		ShengsuanRegistryHost = "registry.xiamen-a.cloud.xmtyu.com"
 		DockerMirrorPrefix = ""
 	}
 

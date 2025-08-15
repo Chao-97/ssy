@@ -124,6 +124,9 @@ func promptToken() (string, error) {
 // 验证token
 func verifyToken(token string) (string, string, error) {
 	mirror := os.Getenv("MIRROR")
+	if mirror == "" {
+		mirror = "cn"
+	}
 	url := "https://" + global.ShengsuanApiHost + "/v2/user/login?mirror=" + mirror
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

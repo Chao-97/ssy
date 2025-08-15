@@ -150,11 +150,11 @@ func push(cmd *cobra.Command, args []string) error {
 		// 从胜算云获取model是否存在
 		var datas = strings.Split(fullImageName, "/")
 		if ok, err := verifyModel(datas[1], datas[2]); err != nil {
-			err = fmt.Errorf("Unable to find Shengsuan existing model for %s. Go to shengsuanyun.com and create a new model before pushing.", fullImageName)
+			err = fmt.Errorf("Unable to find existing model for %s. Go to https://cloud.xmtyu.com/model and create a new model before pushing.", fullImageName)
 			logClient.EndPush(ctx, err, logCtx)
 			return err
 		} else if !ok {
-			err = fmt.Errorf("Unable to find Shengsuan existing model for %s. Go to shengsuanyun.com and create a new model before pushing.", fullImageName)
+			err = fmt.Errorf("Unable to find existing model for %s. Go to https://cloud.xmtyu.com/model and create a new model before pushing.", fullImageName)
 			logClient.EndPush(ctx, err, logCtx)
 			return err
 		}

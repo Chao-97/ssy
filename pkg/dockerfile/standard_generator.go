@@ -227,6 +227,26 @@ func (g *StandardGenerator) GenerateDockerfileWithoutSeparateWeights(ctx context
 	if err != nil {
 		return "", err
 	}
+
+	// Check if we should split layers based on size
+	maxLayerSizeGB := g.Config.Build.MaxLayerSizeGB
+	if maxLayerSizeGB > 0 {
+		copyCommands, err := g.generateLayeredCopyCommands(maxLayerSizeGB, g.Config.Build.LayerFirst)
+		if err != nil {
+			console.Warnf("Failed to generate layered copy commands, falling back to single COPY: %v", err)
+			return joinStringsWithoutLineSpace([]string{
+				base,
+				`COPY . /src`,
+			}), nil
+		}
+
+		// Join base with layered copy commands
+		var lines []string
+		lines = append(lines, base)
+		lines = append(lines, copyCommands...)
+		return joinStringsWithoutLineSpace(lines), nil
+	}
+
 	return joinStringsWithoutLineSpace([]string{
 		base,
 		`COPY . /src`,
@@ -270,11 +290,85 @@ func (g *StandardGenerator) GenerateModelBaseWithSeparateWeights(ctx context.Con
 		`WORKDIR /src`,
 		`EXPOSE 5000`,
 		`CMD ["python", "-m", "ssy.server.http"]`,
-		`COPY . /src`,
 	)
+
+	// Add layered copy commands instead of single COPY . /src
+	maxLayerSizeGB := g.Config.Build.MaxLayerSizeGB
+	if maxLayerSizeGB > 0 {
+		copyCommands, err := g.generateLayeredCopyCommands(maxLayerSizeGB, g.Config.Build.LayerFirst)
+		if err != nil {
+			console.Warnf("Failed to generate layered copy commands, falling back to single COPY: %v", err)
+			base = append(base, `COPY . /src`)
+		} else {
+			base = append(base, copyCommands...)
+		}
+	} else {
+		base = append(base, `COPY . /src`)
+	}
 
 	dockerignoreContents = makeDockerignoreForWeights(g.modelDirs, g.modelFiles)
 	return weightsBase, joinStringsWithoutLineSpace(base), dockerignoreContents, nil
+}
+
+// generateLayeredCopyCommands generates multiple COPY commands to split files into layers
+func (g *StandardGenerator) generateLayeredCopyCommands(maxLayerSizeGB int64, layerFirst bool) ([]string, error) {
+	// Create layer splitter
+	splitter := NewLayerSplitter(maxLayerSizeGB, g.Dir)
+	splitter.SetLayerFirst(layerFirst)
+
+	// Set exclude paths based on .dockerignore patterns
+	excludePaths := []string{
+		".git",
+		".gitignore",
+		".dockerignore",
+		"Dockerfile",
+		"__pycache__",
+		"*.pyc",
+		"*.pyo",
+		"*.pyd",
+		".Python",
+		"env",
+		"pip-log.txt",
+		"pip-delete-this-directory.txt",
+		".tox",
+		".coverage",
+		".coverage.*",
+		".cache",
+		"nosetests.xml",
+		"coverage.xml",
+		"*.cover",
+		"*.log",
+		".mypy_cache",
+		".pytest_cache",
+		".hypothesis",
+	}
+	splitter.SetExcludePaths(excludePaths)
+
+	// Scan files in the source directory
+	files, err := splitter.ScanFiles()
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan files: %w", err)
+	}
+
+	// Split files into layers
+	batches, err := splitter.SplitIntoLayers(files)
+	if err != nil {
+		return nil, fmt.Errorf("failed to split files into layers: %w", err)
+	}
+
+	if len(batches) <= 1 {
+		// If we only have one batch, use the simple COPY command
+		return []string{"COPY . /src"}, nil
+	}
+
+	// Generate COPY commands for each batch
+	copyCommands := splitter.GenerateCopyCommands(batches, "/src")
+
+	// Print layer information
+	console.Infof("Split files into %d layers for size optimization:", len(batches))
+	console.Info(splitter.GetLayerSizeInfo(batches))
+
+	return copyCommands, nil
 }
 
 func (g *StandardGenerator) generateForWeights() (string, []string, []string, error) {

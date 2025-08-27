@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 
 	"github.com/replicate/cog/pkg/config"
 	"github.com/replicate/cog/pkg/docker/command"
@@ -263,36 +261,13 @@ func Build(
 	if cogBaseImageName != "" {
 		labels[global.LabelNamespace+"cog-base-image-name"] = cogBaseImageName
 
-		ref, err := name.ParseReference(cogBaseImageName)
-		if err != nil {
-			return fmt.Errorf("Failed to parse cog base image reference: %w", err)
-		}
+		// Skip remote image fetching to avoid network issues
+		// This was causing timeouts when trying to fetch official Cog base images
+		console.Debugf("Skipping remote fetch for cog base image: %s", cogBaseImageName)
 
-		img, err := remote.Image(ref)
-		if err != nil {
-			return fmt.Errorf("Failed to fetch cog base image: %w", err)
-		}
-
-		layers, err := img.Layers()
-		if err != nil {
-			return fmt.Errorf("Failed to get layers for cog base image: %w", err)
-		}
-
-		if len(layers) == 0 {
-			return fmt.Errorf("Cog base image has no layers: %s", cogBaseImageName)
-		}
-
-		lastLayerIndex := len(layers) - 1
-		layerLayerDigest, err := layers[lastLayerIndex].DiffID()
-		if err != nil {
-			return fmt.Errorf("Failed to get last layer digest for cog base image: %w", err)
-		}
-
-		lastLayer := layerLayerDigest.String()
-		console.Debugf("Last layer of the cog base image: %s", lastLayer)
-
-		labels[global.LabelNamespace+"cog-base-image-last-layer-sha"] = lastLayer
-		labels[global.LabelNamespace+"cog-base-image-last-layer-idx"] = fmt.Sprintf("%d", lastLayerIndex)
+		// Set default values for layer information
+		labels[global.LabelNamespace+"cog-base-image-last-layer-sha"] = "unavailable"
+		labels[global.LabelNamespace+"cog-base-image-last-layer-idx"] = "0"
 	}
 
 	if commit, err := gitHead(ctx, dir); commit != "" && err == nil {

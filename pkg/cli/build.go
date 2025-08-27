@@ -30,6 +30,8 @@ var buildStrip bool
 var buildPrecompile bool
 var buildFast bool
 var buildLocalImage bool
+var buildMaxLayerSizeGB int64
+var buildLayerFirst bool
 var configFilename string
 
 const useCogBaseImageFlagKey = "use-cog-base-image"
@@ -56,6 +58,8 @@ func newBuildCommand() *cobra.Command {
 	addFastFlag(cmd)
 	addLocalImage(cmd)
 	addConfigFlag(cmd)
+	addMaxLayerSizeFlag(cmd)
+	addLayerFirstFlag(cmd)
 	addPipelineImage(cmd)
 	cmd.Flags().StringVarP(&buildTag, "tag", "t", "", "A name for the built image in the form 'repository:tag'")
 	return cmd
@@ -84,6 +88,14 @@ func buildCommand(cmd *cobra.Command, args []string) error {
 	// In case one of `--x-fast` & `fast: bool` is set
 	if cfg.Build.Fast {
 		buildFast = cfg.Build.Fast
+	}
+	// Apply max layer size flag if provided
+	if buildMaxLayerSizeGB > 0 {
+		cfg.Build.MaxLayerSizeGB = buildMaxLayerSizeGB
+	}
+	// Apply layer first flag if provided
+	if cmd.Flags().Changed("layer-first") {
+		cfg.Build.LayerFirst = buildLayerFirst
 	}
 	logCtx.Fast = buildFast
 	logCtx.CogRuntime = cfg.Build.CogRuntime
@@ -206,6 +218,14 @@ func addLocalImage(cmd *cobra.Command) {
 func addConfigFlag(cmd *cobra.Command) {
 	const configFlag = "f"
 	cmd.Flags().StringVar(&configFilename, configFlag, "ssy.yaml", "The name of the config file.")
+}
+
+func addMaxLayerSizeFlag(cmd *cobra.Command) {
+	cmd.Flags().Int64Var(&buildMaxLayerSizeGB, "max-layer-size", 0, "Maximum size for a single Docker layer in GB (0 to disable layer splitting, default: 50GB for AWS ECR compatibility)")
+}
+
+func addLayerFirstFlag(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&buildLayerFirst, "layer-first", true, "Prioritize creating more layers for better caching (default: true)")
 }
 
 func checkMutuallyExclusiveFlags(cmd *cobra.Command, args []string) error {

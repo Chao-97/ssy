@@ -26,9 +26,14 @@ import (
 // buildFullImageName constructs the full image name by prepending the appropriate registry host
 // based on the MIRROR environment variable if the imageName doesn't already contain a registry host
 func buildFullImageName(imageName string) string {
-	// If the image name already contains a registry host (has a slash and domain-like prefix), return as-is
-	if strings.Contains(imageName, "/") && (strings.Contains(imageName, ".") || strings.Contains(imageName, ":")) {
-		return imageName
+	// Check if the image name already contains a registry host
+	// A registry host should have a domain format (contains dots) and come before the first slash
+	if strings.Contains(imageName, "/") {
+		parts := strings.Split(imageName, "/")
+		if len(parts) > 0 && strings.Contains(parts[0], ".") {
+			// First part contains a dot, likely a registry host
+			return imageName
+		}
 	}
 
 	// Get the appropriate registry host based on MIRROR environment variable

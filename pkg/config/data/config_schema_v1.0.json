@@ -160,18 +160,6 @@
           "$id": "#/properties/build/properties/python_overrides",
           "type": "string",
           "description": "A file in the format of pip requirements that specifies python overrides."
-        },
-        "max_layer_size_gb": {
-          "$id": "#/properties/build/properties/max_layer_size_gb",
-          "type": "number",
-          "minimum": 0.1,
-          "maximum": 51,
-          "description": "Maximum size in GB for each Docker layer to avoid registry limits (e.g., AWS ECR's 51GB limit). Default is 50GB."
-        },
-        "layer_first": {
-          "$id": "#/properties/build/properties/layer_first",
-          "type": "boolean",
-          "description": "If true, prioritize creating more layers for better caching even when directories could fit in fewer layers. Default is true."
         }
       },
       "additionalProperties": false

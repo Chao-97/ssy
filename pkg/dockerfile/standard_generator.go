@@ -228,10 +228,11 @@ func (g *StandardGenerator) GenerateDockerfileWithoutSeparateWeights(ctx context
 		return "", err
 	}
 
-	// Check if we should split layers based on size
-	maxLayerSizeGB := g.Config.Build.MaxLayerSizeGB
+	// Check if we should split layers based on size - use default values
+	maxLayerSizeGB := int64(50) // Default 50GB for AWS ECR compatibility
+	layerFirst := true          // Default to layer-first strategy
 	if maxLayerSizeGB > 0 {
-		copyCommands, err := g.generateLayeredCopyCommands(maxLayerSizeGB, g.Config.Build.LayerFirst)
+		copyCommands, err := g.generateLayeredCopyCommands(maxLayerSizeGB, layerFirst)
 		if err != nil {
 			console.Warnf("Failed to generate layered copy commands, falling back to single COPY: %v", err)
 			return joinStringsWithoutLineSpace([]string{
@@ -292,10 +293,11 @@ func (g *StandardGenerator) GenerateModelBaseWithSeparateWeights(ctx context.Con
 		`CMD ["python", "-m", "ssy.server.http"]`,
 	)
 
-	// Add layered copy commands instead of single COPY . /src
-	maxLayerSizeGB := g.Config.Build.MaxLayerSizeGB
+	// Add layered copy commands instead of single COPY . /src - use default values
+	maxLayerSizeGB := int64(50) // Default 50GB for AWS ECR compatibility
+	layerFirst := true          // Default to layer-first strategy
 	if maxLayerSizeGB > 0 {
-		copyCommands, err := g.generateLayeredCopyCommands(maxLayerSizeGB, g.Config.Build.LayerFirst)
+		copyCommands, err := g.generateLayeredCopyCommands(maxLayerSizeGB, layerFirst)
 		if err != nil {
 			console.Warnf("Failed to generate layered copy commands, falling back to single COPY: %v", err)
 			base = append(base, `COPY . /src`)

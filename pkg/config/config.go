@@ -58,8 +58,6 @@ type Build struct {
 	Fast               bool      `json:"fast,omitempty" yaml:"fast,omitempty"`
 	CogRuntime         bool      `json:"ssy_runtime,omitempty" yaml:"ssy_runtime,omitempty"`
 	PythonOverrides    string    `json:"python_overrides,omitempty" yaml:"python_overrides,omitempty"`
-	MaxLayerSizeGB     int64     `json:"max_layer_size_gb,omitempty" yaml:"max_layer_size_gb,omitempty"` // Maximum size for a single Docker layer in GB, default 50GB for AWS ECR compatibility
-	LayerFirst         bool      `json:"layer_first,omitempty" yaml:"layer_first,omitempty"`             // If true, prioritize creating more layers for better caching, default true
 
 	pythonRequirementsContent []string
 }
@@ -87,10 +85,8 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Build: &Build{
-			GPU:            false,
-			PythonVersion:  "3.13",
-			MaxLayerSizeGB: 50,   // Default 50GB for AWS ECR compatibility
-			LayerFirst:     true, // Default to layer-first strategy for better caching
+			GPU:           false,
+			PythonVersion: "3.13",
 		},
 	}
 }

@@ -4,6 +4,7 @@ import types
 from typing import List, Optional, Set, Tuple, Union
 
 COG_IMPORT_MODULES = {
+    "ssy",
     "cog",
     "typing",
     "typing_extensions",

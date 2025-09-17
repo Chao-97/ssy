@@ -540,18 +540,28 @@ func (ls *LayerSplitter) shouldCopyWholeInLayerFirstMode(node *DirectoryNode) bo
 func (ls *LayerSplitter) generateCopyOperations(root *DirectoryNode) ([]CopyOperation, error) {
 	var operations []CopyOperation
 
-	// Process root files first
-	if len(root.Files) > 0 {
-		ops, err := ls.generateFileOperations(root.Files, "")
+	// First, process subdirectories (deeper files first for better caching)
+	// Sort directories by name for consistent ordering
+	var dirNames []string
+	for dirName := range root.Subdirs {
+		dirNames = append(dirNames, dirName)
+	}
+	sort.Strings(dirNames)
+
+	for _, dirName := range dirNames {
+		subdir := root.Subdirs[dirName]
+		ops, err := ls.generateDirectoryOperations(dirName, subdir)
 		if err != nil {
 			return nil, err
 		}
 		operations = append(operations, ops...)
 	}
 
-	// Process subdirectories
-	for dirName, subdir := range root.Subdirs {
-		ops, err := ls.generateDirectoryOperations(dirName, subdir)
+	// Finally, process root files last (these are often frequently changed files like predict.py, ssy.yaml)
+	// This ensures better Docker layer caching when these files are modified
+	if len(root.Files) > 0 {
+		console.Infof("Processing root files last for better layer caching: %d files", len(root.Files))
+		ops, err := ls.generateFileOperations(root.Files, "")
 		if err != nil {
 			return nil, err
 		}
@@ -576,20 +586,28 @@ func (ls *LayerSplitter) generateDirectoryOperations(dirName string, node *Direc
 		operations = append(operations, operation)
 	} else {
 		// Directory is too large - need to split it
+		// Process subdirectories first (deeper files first for better caching)
 
-		// First, copy files in this directory
-		if len(node.Files) > 0 {
-			ops, err := ls.generateFileOperations(node.Files, dirName)
+		// Sort subdirectory names for consistent ordering
+		var subdirNames []string
+		for subdirName := range node.Subdirs {
+			subdirNames = append(subdirNames, subdirName)
+		}
+		sort.Strings(subdirNames)
+
+		for _, subdirName := range subdirNames {
+			subdir := node.Subdirs[subdirName]
+			fullSubdirPath := filepath.Join(dirName, subdirName)
+			ops, err := ls.generateDirectoryOperations(fullSubdirPath, subdir)
 			if err != nil {
 				return nil, err
 			}
 			operations = append(operations, ops...)
 		}
 
-		// Then, process subdirectories
-		for subdirName, subdir := range node.Subdirs {
-			fullSubdirPath := filepath.Join(dirName, subdirName)
-			ops, err := ls.generateDirectoryOperations(fullSubdirPath, subdir)
+		// Then, copy files in this directory (these are closer to root, so processed later)
+		if len(node.Files) > 0 {
+			ops, err := ls.generateFileOperations(node.Files, dirName)
 			if err != nil {
 				return nil, err
 			}
@@ -602,8 +620,19 @@ func (ls *LayerSplitter) generateDirectoryOperations(dirName string, node *Direc
 
 // generateFileOperations generates copy operations for a list of files
 func (ls *LayerSplitter) generateFileOperations(files []FileInfo, basePath string) ([]CopyOperation, error) {
-	// Sort files by size (largest first) for better packing
+	// Sort files by depth first (deeper files first), then by size for better caching
+	// This ensures that frequently changed files like predict.py and ssy.yaml (which are usually in root)
+	// will be placed in later layers, improving cache hit rates
 	sort.Slice(files, func(i, j int) bool {
+		depthI := ls.getPathDepth(files[i].Path)
+		depthJ := ls.getPathDepth(files[j].Path)
+
+		// Primary sort: deeper files first (higher depth first)
+		if depthI != depthJ {
+			return depthI > depthJ
+		}
+
+		// Secondary sort: within same depth, larger files first for better packing
 		return files[i].Size > files[j].Size
 	})
 
@@ -787,6 +816,7 @@ func (ls *LayerSplitter) GetLayerSizeInfo(batches []FileBatch) string {
 	var maxLayerSize int64
 	var totalSize int64
 	totalItems := 0
+	rootFiles := 0
 
 	for _, batch := range batches {
 		if batch.TotalSize > maxLayerSize {
@@ -794,11 +824,25 @@ func (ls *LayerSplitter) GetLayerSizeInfo(batches []FileBatch) string {
 		}
 		totalSize += batch.TotalSize
 		totalItems += len(batch.Files)
+
+		// Count root-level files (those that might be frequently changed)
+		for _, file := range batch.Files {
+			if ls.getPathDepth(file) <= 1 {
+				rootFiles++
+			}
+		}
 	}
 
 	maxLayerSizeGB := float64(maxLayerSize) / float64(GBToBytes)
 	totalSizeGB := float64(totalSize) / float64(GBToBytes)
 
-	return fmt.Sprintf("Generated %d layers, %d items total (%.2f GB), largest layer: %.2f GB",
+	baseInfo := fmt.Sprintf("Generated %d layers, %d items total (%.2f GB), largest layer: %.2f GB",
 		len(batches), totalItems, totalSizeGB, maxLayerSizeGB)
+
+	if rootFiles > 0 {
+		return fmt.Sprintf("%s\nLayer optimization: %d root files (like predict.py, ssy.yaml) placed in later layers for better caching",
+			baseInfo, rootFiles)
+	}
+
+	return baseInfo
 }
